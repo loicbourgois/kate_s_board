@@ -1,0 +1,62 @@
+* {
+    background: none;
+    /* background: #111; */
+    padding: 0;
+    margin: 0;
+    font-family: monospace; 
+    border: 0px #0000;
+    color: #ddd;
+}
+body {
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    background: #111;
+}
+/* canvas {
+     background: #222; 
+} */
+#right {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    right: 0;
+}
+#sliders {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background: none;
+}
+.slider {
+    width: 20rem;
+    margin-right: 1rem;
+}
+.slider_holder {
+    margin-bottom: 0.5rem;
+    display: flex;
+}
+
+
+/* Element | file:///Users/loicbourgois/github.com/loicbourgois/kate_s_board/index.html */
+
+#angular_springs {
+    flex-grow: 1;
+  }
+  
+  /* Element | file:///Users/loicbourgois/github.com/loicbourgois/kate_s_board/index.html */
+  
+  #right {
+    height: 100vh;
+  }
+  textarea {
+    background: #222;
+    padding: 1rem;
+    font-size: 0.85rem;
+  }
+
+  #infos {
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+  }
