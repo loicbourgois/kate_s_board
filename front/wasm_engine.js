@@ -122,6 +122,22 @@ function passStringToWasm0(arg, malloc, realloc) {
     WASM_VECTOR_LEN = offset;
     return ptr;
 }
+
+let cachedUint32Memory0 = null;
+
+function getUint32Memory0() {
+    if (cachedUint32Memory0 === null || cachedUint32Memory0.byteLength === 0) {
+        cachedUint32Memory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32Memory0;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32Memory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
 /**
 */
 export class Simulation {
@@ -235,6 +251,83 @@ export class Simulation {
         return Simulation.__wrap(ret);
     }
     /**
+    * @param {Uint32Array} node_ids
+    * @param {Uint32Array} orientation_node_ids
+    * @returns {number}
+    */
+    create_entity(node_ids, orientation_node_ids) {
+        const ptr0 = passArray32ToWasm0(node_ids, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray32ToWasm0(orientation_node_ids, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.simulation_create_entity(this.__wbg_ptr, ptr0, len0, ptr1, len1);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} entity_id
+    * @returns {Vector}
+    */
+    get_position(entity_id) {
+        const ret = wasm.simulation_get_position(this.__wbg_ptr, entity_id);
+        return Vector.__wrap(ret);
+    }
+    /**
+    * @param {number} entity_id
+    * @returns {Vector}
+    */
+    get_previous_position(entity_id) {
+        const ret = wasm.simulation_get_previous_position(this.__wbg_ptr, entity_id);
+        return Vector.__wrap(ret);
+    }
+    /**
+    * @param {number} node_id
+    * @returns {Vector}
+    */
+    get_node_position(node_id) {
+        const ret = wasm.simulation_get_node_position(this.__wbg_ptr, node_id);
+        return Vector.__wrap(ret);
+    }
+    /**
+    * @param {number} node_id
+    * @returns {Vector}
+    */
+    get_node_direction(node_id) {
+        const ret = wasm.simulation_get_node_direction(this.__wbg_ptr, node_id);
+        return Vector.__wrap(ret);
+    }
+    /**
+    * @param {number} entity_id
+    * @returns {Vector}
+    */
+    get_vellocity(entity_id) {
+        const ret = wasm.simulation_get_vellocity(this.__wbg_ptr, entity_id);
+        return Vector.__wrap(ret);
+    }
+    /**
+    * @param {number} entity_id
+    * @returns {Vector}
+    */
+    get_orientation(entity_id) {
+        const ret = wasm.simulation_get_orientation(this.__wbg_ptr, entity_id);
+        return Vector.__wrap(ret);
+    }
+    /**
+    * @param {number} entity_id
+    * @returns {Vector}
+    */
+    get_orientation_previous(entity_id) {
+        const ret = wasm.simulation_get_orientation_previous(this.__wbg_ptr, entity_id);
+        return Vector.__wrap(ret);
+    }
+    /**
+    * @param {number} node_id
+    * @returns {Vector}
+    */
+    get_node_vellocity(node_id) {
+        const ret = wasm.simulation_get_node_vellocity(this.__wbg_ptr, node_id);
+        return Vector.__wrap(ret);
+    }
+    /**
     * @param {string} str_
     * @param {number} ratio
     */
@@ -299,6 +392,13 @@ export class Simulation {
         return ret >>> 0;
     }
     /**
+    * @param {number} id
+    * @param {number} rate
+    */
+    set_turbo_rate(id, rate) {
+        wasm.simulation_set_turbo_rate(this.__wbg_ptr, id, rate);
+    }
+    /**
     * @param {number} x
     * @param {number} y
     * @param {boolean} fixed
@@ -307,6 +407,16 @@ export class Simulation {
     */
     add_node_2(x, y, fixed, z) {
         const ret = wasm.simulation_add_node_2(this.__wbg_ptr, x, y, fixed, z);
+        return ret >>> 0;
+    }
+    /**
+    * @param {string} config_str
+    * @returns {number}
+    */
+    add_node_3(config_str) {
+        const ptr0 = passStringToWasm0(config_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.simulation_add_node_3(this.__wbg_ptr, ptr0, len0);
         return ret >>> 0;
     }
     /**
@@ -443,6 +553,14 @@ export class Simulation {
 /**
 */
 export class Vector {
+
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(Vector.prototype);
+        obj.__wbg_ptr = ptr;
+
+        return obj;
+    }
 
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
@@ -645,6 +763,7 @@ function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
     __wbg_init.__wbindgen_wasm_module = module;
     cachedInt32Memory0 = null;
+    cachedUint32Memory0 = null;
     cachedUint8Memory0 = null;
 
 

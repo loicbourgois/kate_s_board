@@ -1,7 +1,7 @@
-import { add_wheel } from "../build/wheel.js";
-import { add_spikewheel } from "../build/spike_wheel.js";
-import { add_motor, add_motor_2 } from "../build/motor.js";
-import { add_gear } from "../build/gear.js";
+import { add_wheel } from "../elements/wheel.js";
+import { add_spikewheel } from "../elements/spike_wheel.js";
+import { add_motor, add_motor_2 } from "../elements/motor.js";
+import { add_gear } from "../elements/gear.js";
 import { node } from "../node.js";
 import { distance, find_angle } from "../math.js";
 import { rotate } from "../math.js";
