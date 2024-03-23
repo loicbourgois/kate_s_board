@@ -1,6 +1,8 @@
+mod entity;
 mod math;
 mod node;
 mod vector;
+use crate::entity::Entity;
 use crate::math::collision_response;
 use crate::math::delta;
 use crate::math::distance;
@@ -10,7 +12,9 @@ use crate::math::norm;
 use crate::math::normalize_2;
 use crate::math::rotate;
 use crate::node::Node;
+use crate::node::NodeConfig;
 use crate::node::VectorIsize;
+use crate::node::NODE_SIZE;
 use crate::vector::Vector;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -60,6 +64,8 @@ pub struct Simulation {
     friction_ratio: f64,
     max_speed: f64,
     grid: HashMap<(isize, isize), Vec<usize>>,
+    linked: HashMap<usize, HashSet<usize>>,
+    entities: Vec<Entity>,
 }
 
 #[derive(Clone)]
@@ -126,7 +132,61 @@ impl Simulation {
             friction_ratio: config.friction_ratio,
             max_speed: config.max_speed,
             grid: HashMap::new(),
+            linked: HashMap::new(),
+            entities: Vec::new(),
         }
+    }
+
+    pub fn create_entity(
+        &mut self,
+        node_ids: Vec<usize>,
+        orientation_node_ids: Vec<usize>,
+    ) -> usize {
+        let entity_id = self.entities.len();
+        self.entities.push(Entity {
+            node_ids,
+            id: entity_id,
+            p: Vector::new(),
+            v: Vector::new(),
+            pp: Vector::new(),
+            vn: Vector::new(),
+            orientation_node_ids,
+            orientation: Vector::new(),
+            orientation_previous: Vector::new(),
+        });
+        entity_id
+    }
+
+    pub fn get_position(&mut self, entity_id: usize) -> Vector {
+        self.entities[entity_id].p
+    }
+
+    pub fn get_previous_position(&mut self, entity_id: usize) -> Vector {
+        self.entities[entity_id].pp
+    }
+
+    pub fn get_node_position(&mut self, node_id: usize) -> Vector {
+        self.nodes[node_id].p
+    }
+
+    pub fn get_node_direction(&mut self, node_id: usize) -> Vector {
+        self.nodes[node_id].direction
+    }
+
+    pub fn get_vellocity(&mut self, entity_id: usize) -> Vector {
+        self.entities[entity_id].v
+    }
+
+    pub fn get_orientation(&mut self, entity_id: usize) -> Vector {
+        self.entities[entity_id].orientation
+    }
+
+    pub fn get_orientation_previous(&mut self, entity_id: usize) -> Vector {
+        self.entities[entity_id].orientation_previous
+    }
+
+    pub fn get_node_vellocity(&mut self, node_id: usize) -> Vector {
+        self.nodes[node_id].v
     }
 
     pub fn add_bezier(&mut self, str_: String, ratio: f64) {
@@ -251,13 +311,43 @@ impl Simulation {
             }
         }
         // println!("{grid:?}");
-        // gravity
+        // speed + gravity
         for mut n in &mut self.nodes {
             n.dv.x += n.p.x - n.pp.x;
             n.dv.y += n.p.y - n.pp.y;
             n.dv.y -= self.gravity;
         }
+        //
+        // turbo
+        //
+        unsafe {
+            let nodes_1 = &mut (*nodes_ptr);
+            let nodes_2 = &mut (*nodes_ptr);
+            for mut n in nodes_1.iter_mut() {
+                match self.linked.get(&n.idx) {
+                    None => {}
+                    Some(hset) => {
+                        let mut direction = Vector { x: 0.0, y: 0.0 };
+                        for idx2 in hset {
+                            let n2 = &nodes_2[*idx2];
+                            let d = delta(&n2.p, &n.p);
+                            direction.x += d.x;
+                            direction.y += d.y;
+                        }
+                        n.direction = normalize_2(direction);
+                        if n.direction.x.is_finite() && n.direction.y.is_finite() {
+                            n.dv.x +=
+                                n.turbo_max_speed * n.turbo_rate * self.diameter * n.direction.x;
+                            n.dv.y +=
+                                n.turbo_max_speed * n.turbo_rate * self.diameter * n.direction.y;
+                        }
+                    }
+                }
+            }
+        }
+        //
         // collision
+        //
         let diam_sqrd = self.diameter * self.diameter;
         let mut pairs = HashMap::new();
 
@@ -475,6 +565,11 @@ impl Simulation {
                 self.focused_node = Some(n.idx);
             }
         }
+
+        for entity in self.entities.iter_mut() {
+            entity.update(&self.nodes);
+        }
+
         self.step += 1;
     }
 
@@ -505,11 +600,14 @@ impl Simulation {
             pp: Vector { x: 3.0, y: 4.0 },
             dp: Vector { x: 5.0, y: 6.0 },
             dv: Vector { x: 7.0, y: 8.0 },
+            direction: Vector { x: 14.0, y: 15.0 },
             m: 9.0,
             v: Vector { x: 10.0, y: 11.0 },
-            z: 12,
-            idx: 13,
+            z: 101,
+            idx: 102,
             fixed: true,
+            turbo_max_speed: 12.0,
+            turbo_rate: 13.0,
             grid: VectorIsize { x: 0, y: 0 },
         });
         self.nodes.push(Node {
@@ -517,30 +615,38 @@ impl Simulation {
             pp: Vector { x: -3.0, y: -4.0 },
             dp: Vector { x: -5.0, y: -6.0 },
             dv: Vector { x: -7.0, y: -8.0 },
+            direction: Vector { x: -14.0, y: -15.0 },
             m: -9.0,
             v: Vector { x: -10.0, y: -11.0 },
-            z: 14,
-            idx: 15,
+            z: 103,
+            idx: 104,
             fixed: false,
+            turbo_max_speed: -12.0,
+            turbo_rate: -13.0,
             grid: VectorIsize { x: 0, y: 0 },
         })
     }
 
     pub fn add_node(&mut self, x: f64, y: f64, fixed: bool) -> usize {
-        let idx = self.nodes.len();
-        self.nodes.push(Node {
-            p: Vector { x: x, y: y },
-            pp: Vector { x: x, y: y },
-            dv: Vector { x: 0.0, y: 0.0 },
-            dp: Vector { x: 0.0, y: 0.0 },
-            v: Vector { x: 0.0, y: 0.0 },
-            idx,
-            m: self.mass,
-            fixed: fixed,
-            z: 0,
-            grid: VectorIsize { x: 0, y: 0 },
-        });
-        idx
+        self.add_node_2(x, y, fixed, 0)
+        // let idx = self.nodes.len();
+        // self.nodes.push(Node {
+        //     p: Vector { x: x, y: y },
+        //     pp: Vector { x: x, y: y },
+        //     dv: Vector { x: 0.0, y: 0.0 },
+        //     dp: Vector { x: 0.0, y: 0.0 },
+        //     v: Vector { x: 0.0, y: 0.0 },
+        //     idx,
+        //     m: self.mass,
+        //     fixed: fixed,
+        //     z: 0,
+        //     grid: VectorIsize { x: 0, y: 0 },
+        // });
+        // idx
+    }
+
+    pub fn set_turbo_rate(&mut self, id: usize, rate: f64) {
+        self.nodes[id].turbo_rate = rate;
     }
 
     pub fn add_node_2(&mut self, x: f64, y: f64, fixed: bool, z: usize) -> usize {
@@ -551,10 +657,34 @@ impl Simulation {
             dv: Vector { x: 0.0, y: 0.0 },
             dp: Vector { x: 0.0, y: 0.0 },
             v: Vector { x: 0.0, y: 0.0 },
+            direction: Vector { x: 0.0, y: 0.0 },
             idx,
             m: self.mass,
             fixed: fixed,
             z,
+            turbo_max_speed: 0.0,
+            turbo_rate: 0.0,
+            grid: VectorIsize { x: 0, y: 0 },
+        });
+        idx
+    }
+
+    pub fn add_node_3(&mut self, config_str: String) -> usize {
+        let c: NodeConfig = serde_json::from_str(&config_str).unwrap();
+        let idx = self.nodes.len();
+        self.nodes.push(Node {
+            p: Vector { x: c.x, y: c.y },
+            pp: Vector { x: c.x, y: c.y },
+            dv: Vector { x: 0.0, y: 0.0 },
+            dp: Vector { x: 0.0, y: 0.0 },
+            v: Vector { x: 0.0, y: 0.0 },
+            direction: Vector { x: 0.0, y: 0.0 },
+            idx,
+            m: self.mass,
+            fixed: c.fixed,
+            z: 0,
+            turbo_max_speed: c.turbo_max_speed,
+            turbo_rate: 0.0,
             grid: VectorIsize { x: 0, y: 0 },
         });
         idx
@@ -562,6 +692,15 @@ impl Simulation {
 
     pub fn add_link(&mut self, a: usize, b: usize, l: f64, s: f64, damping: f64) -> usize {
         let idx = self.links.len();
+        for (i1, i2) in [(a, b), (b, a)] {
+            match self.linked.get_mut(&i1) {
+                Some(x) => {}
+                None => {
+                    self.linked.insert(i1, HashSet::new());
+                }
+            }
+            self.linked.get_mut(&i1).unwrap().insert(i2);
+        }
         self.links.push(Link {
             a,
             b,
@@ -612,7 +751,7 @@ impl Simulation {
     }
 
     pub fn node_size(&self) -> usize {
-        13 * 8 + 8
+        NODE_SIZE
     }
 
     pub fn nodes_count(&self) -> usize {

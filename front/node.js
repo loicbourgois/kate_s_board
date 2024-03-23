@@ -21,14 +21,20 @@ const node = (view, idx, node_size) => {
             x: view.getFloat64(i+8*6, true),
             y: view.getFloat64(i+8*7, true),
         },
-        m: view.getFloat64(i+8*8, true),
         v: {
-            x: view.getFloat64(i+8*9, true),
-            y: view.getFloat64(i+8*10, true),
+            x: view.getFloat64(i+8*8, true),
+            y: view.getFloat64(i+8*9, true),
         },
-        z: view.getUint32(i+8*12, true),
-        idx: view.getUint32(i+8*12+4, true),
-        fixed: view.getUint32(i+8*13, true),
+        direction: {
+            x: view.getFloat64(i+8*10, true),
+            y: view.getFloat64(i+8*11, true),
+        },
+        m: view.getFloat64(i+8*13, true),
+        turbo_max_speed: view.getFloat64(i+8*14, true),
+        turbo_rate: view.getFloat64(i+8*15, true),
+        z: view.getUint32(i+8*16, true),
+        idx: view.getUint32(i+8*16+4, true),
+        fixed: view.getUint32(i+8*17, true),
     }
 }
 

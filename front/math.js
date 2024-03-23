@@ -22,6 +22,15 @@ const delta = (a, b) => {
 }
 
 
+const normalize = (p) => {
+    const d = Math.sqrt(p.x * p.x + p.y * p.y);
+    return {
+        x: p.x / d,
+        y: p.y / d,
+    }
+}
+
+
 const distance = (a, b) => {
     const d = delta(a, b)
     return Math.sqrt(d.x * d.x + d.y * d.y)
@@ -49,4 +58,5 @@ export {
     distance,
     delta,
     find_angle,
+    normalize,
 }
