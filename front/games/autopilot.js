@@ -15,18 +15,23 @@ const ship_str = `
 `.replaceAll("\\"," \\")
 
 
-const get_pid = (kp, ki, kd, target) => {
+const get_pid = (kp, ki, kd, target, mul, base) => {
     const pid = {
         kp: kp,
         ki: ki,
         kd: kd,
         errors: [],
+        errors_long: [],
         target: target,
-        // error: 0.0,
         last_error: 0.0,
+        y_mul: mul,
+        y_base: base,
     }
     for (let index = 0; index < 80; index++) {
         pid.errors.push(0.0)
+    }
+    for (let index = 0; index < 500; index++) {
+        pid.errors_long.push(0.0)
     }
     pid.update = (value) => {
         let error = pid.target - value
@@ -35,10 +40,26 @@ const get_pid = (kp, ki, kd, target) => {
         }
         pid.errors.push(error)
         pid.errors.shift()
+        pid.errors_long.push(error)
+        pid.errors_long.shift()
         let es = 0.0
-        for (const e of pid.errors) {
+        let a = 0
+        let b = 0
+        for (let i = 0; i < pid.errors.length; i++) {
+            const e = pid.errors[i];
             es += e
         }
+        for (let i = 0; i < pid.errors_long.length; i++) {
+            const e = pid.errors_long[i];
+            if (e > 0) {
+                a += 1
+            } else {
+                b += 1
+            }
+        }
+        a = Math.abs(a)
+        b = Math.abs(b)
+        pid.overshoots = (Math.max(a, b) / (a+b)).toFixed(4)
         pid.p = pid.kp * error
         pid.i = pid.ki * es / pid.errors.length
         pid.d = pid.kd * (pid.target - pid.last_error)
@@ -49,7 +70,7 @@ const get_pid = (kp, ki, kd, target) => {
 }
 
 
-const add_ship = (s, model_str, position, target) => {
+const add_ship = (s, model_str, position) => {
     let max_length = 0
     for (const line of model_str.split("\n")) {
         max_length = Math.max(line.length, max_length)
@@ -139,12 +160,29 @@ const add_ship = (s, model_str, position, target) => {
     )
     return {
         id: ship_id,
-        target: target,
+        target: {
+            x: targets[0][0],
+            y: targets[0][1],
+        },
+        next_target: {
+            x: targets[1][0],
+            y: targets[1][1],
+        },
         turbo_ids: turbo_ids,
-        pid1: get_pid(1.0, -0.7, -0.001, 0.5),
-        pid2: get_pid(1.0, 0.0, 0.0, 0.00007),
+        pid1: get_pid(3.0, -2.2, 0.0, 0.5, 300, 300),
+        pid2: get_pid(1.0, 0.0, 0.0, 0.000075, 1000000, 200),
+        pid4: get_pid(1.0, 0.0, -0.0, 0.0, 1000000, 100),
     }
 }
+
+
+const targets = [
+    [0.125, 0.125],
+    [-0.125, 0.125],
+    [-0.125, -0.125],
+    [0.125, -0.125],
+]
+let ti = 0;
 
 
 const drive = (d, s, ship) => {
@@ -153,24 +191,50 @@ const drive = (d, s, ship) => {
     const so = s.get_orientation(ship.id)
     const stt = distance( ship.target, scm ) // ship to target
     if (stt < 0.01) {
+        ti += 1
         ship.target = {
-            x: (Math.random() - 0.5) * 0.5,
-            y: (Math.random() - 0.5) * 0.5,
+            x: targets[ti%targets.length][0],
+            y: targets[ti%targets.length][1],
+        }
+        ship.next_target = {
+            x: targets[(ti+1)%targets.length][0],
+            y: targets[(ti+1)%targets.length][1],
         }
         drive(d, s, ship)
     } 
     const sttd = normalize(delta( ship.target, scm )) // ship to target direction
     const sttdp = normalize(delta( ship.target, scmp )) // ship to target direction previous
+    const ttntd = normalize(delta( ship.target, ship.next_target )) // target to next target direction
     const a3 = find_angle(sttd, {x:0,y:0}, so)
     const a3p = find_angle(sttdp, {x:0,y:0}, so)
-    const sasat = a3 - a3p // ship angluar speed around target
+    const a4 = find_angle(sttd, {x:0,y:0}, ttntd)
+    const a4p = find_angle(sttdp, {x:0,y:0}, ttntd)
+    const sasat = a3 - a3p // ship angular speed around target
+    const sasat2 = a4 - a4p //
     const pid_r = ship.pid1.update(a3)
     const dtt = distance(scm, ship.target)
     const dttp = distance(scmp, ship.target)
     const approach_speed = dttp - dtt
     const pid2_r = ship.pid2.update(approach_speed)
-    d.fill_circle(d.context, scm, s.diameter*1.5, "#0ff")
+    const pid4_r = ship.pid4.update(sasat)
+
+    // d.fill_circle(d.context, scm, s.diameter*1.5, "#0ff")
+
+    let aa = 0;
+    for (const p of targets) {
+        d.fill_circle(d.context, {
+            x: p[0],
+            y: p[1],
+        }, s.diameter*1.5, "#080")
+        d.text(d.context, {
+            x: p[0],
+            y: p[1],
+        }, `${aa}`)
+        aa += 1
+    }
+
     d.fill_circle(d.context, ship.target, s.diameter*1.5, "#0f0")
+    d.fill_circle(d.context, ship.next_target, s.diameter*1.5, "#0b0")
 
     const controls_to_activate = []
     if (pid_r < 0.0) {
@@ -185,6 +249,14 @@ const drive = (d, s, ship) => {
     if (pid2_r < 0.0 && Math.abs(a3 - 0.5) < 0.4 ) {
         controls_to_activate.push('reverse');
     }
+
+    if (pid4_r > 0.0) {
+        controls_to_activate.push("left")
+    }
+    if (pid4_r < 0.0) {
+        controls_to_activate.push("right")
+    }
+    
     d.text(d.context, {
         x: -0.2,
         y: 0.33
@@ -212,14 +284,10 @@ const drive = (d, s, ship) => {
         y: 0.28
     }, `stt: ${stt.toFixed(9)}`)
 
-    
-    const slack = 0.00000001
-    if (sasat < -slack && Math.abs(a3 - 0.5) < 0.1) {
-        controls_to_activate.push("left")
-    } 
-    if (sasat > slack && Math.abs(a3 - 0.5) < 0.1) {
-        controls_to_activate.push("right")
-    } 
+    d.text(d.context, {
+        x: -0.2,
+        y: 0.27
+    }, `a4: ${a4.toFixed(9)}`)
 
 
     for (const tid of ship.turbo_ids) {
@@ -262,23 +330,61 @@ const drive = (d, s, ship) => {
         if (
             fire
         ) {
-            s.set_turbo_rate(tid, -.8)
+            s.set_turbo_rate(tid, -1.0)
             d.fill_circle(d.context, tp, s.diameter*1.5, "#f00")
         } else {
             s.set_turbo_rate(tid, 0.0)
             d.fill_circle(d.context, tp, s.diameter*1.5, "#ff0")
         }
-        // d.text(d.context, tp, tid)
-
-        // d.text(d.context, {
-        //     x: 0.2,
-        //     y: 0.4 - tid*0.04
-        // }, `#${tid}: ${a1.toFixed(5)} - ${controls}`)
-        // d.text(d.context, {
-        //     x: 0.2,
-        //     y: 0.38 - tid*0.04
-        // }, `      ${a2.toFixed(5)}`)
     }
+    // console.log(ship.pid4.errors)
+
+    for (const pid of [
+        ship.pid1,
+        ship.pid2,
+        ship.pid4,
+    ]) {
+        for (let x = 0; x < pid.errors_long.length; x++) {
+            const y = pid.errors_long[x];
+            const base = d.context.canvas.height - pid.y_base
+            line_2(d.context, {
+                x: x,
+                y: base,
+            }, {
+                x: x,
+                y: parseInt(base + y*pid.y_mul),
+            }, "#FF0", 1)
+        }
+        text(d.context, {
+            x: pid.errors_long.length,
+            y: d.context.canvas.height - pid.y_base
+        }, `      ${pid.overshoots}`)
+    }
+
+
+    
+    
+
+}
+
+
+const line_2 = (context, p1, p2, color, line_width) => {
+    context.beginPath();
+    context.moveTo(p1.x, p1.y);
+    context.lineTo(p2.x, p2.y);
+    context.strokeStyle = color;
+    context.lineWidth = line_width?line_width:2;
+    context.stroke();
+}
+
+
+const text = (context, p, txt) => {
+    context.font = "15px Arial";
+    context.fillStyle = "#eee";
+    context.fillText(txt, p.x, p.y); 
+    // context.font = "14px Arial";
+    // context.fillStyle = "#222";
+    // context.fillText(txt, p.x, p.y); 
 }
 
 
@@ -300,7 +406,6 @@ const autopilot = (Simulation, wasm, context) => {
             s,
             ship_str,
             { x: Math.random()*0.5-0.25, y: Math.random()*0.5-0.25, },
-            { x: Math.random()*0.5-0.25, y: Math.random()*0.5-0.25, }
         ))
     }
     return {

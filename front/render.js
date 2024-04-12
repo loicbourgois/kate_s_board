@@ -2,7 +2,7 @@ import { link } from "./link.js";
 import { node } from "./node.js";
 
 let draw_center = [0, 0]
-let draw_zoom = 1.
+let draw_zoom = 1.25
 
 
 const set_draw_center = (a) => {
