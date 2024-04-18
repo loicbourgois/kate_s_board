@@ -54,3 +54,6 @@ textarea {
   padding-right: 1rem;
   padding-top: 0.5rem;
 }
+#hidden_infos {
+  display: none;
+}

@@ -48,6 +48,7 @@ pub struct Simulation {
     mass: f64,
     pub diameter: f64,
     gravity: f64,
+    central_gravity: f64,
     crdv: f64,
     crdp: f64,
     crdv2: f64,
@@ -99,6 +100,7 @@ pub struct Config {
     pub crdp2: f64,
     pub diameter: f64,
     pub gravity: f64,
+    pub central_gravity: f64,
     pub friction_ratio: f64,
     pub ticker: usize,
     pub max_speed: f64,
@@ -116,6 +118,7 @@ impl Simulation {
             mass: 1.0,
             diameter: config.diameter,
             gravity: config.gravity,
+            central_gravity: config.central_gravity,
             crdv: config.crdv,
             crdp: config.crdp,
             crdv2: config.crdv2,
@@ -316,6 +319,9 @@ impl Simulation {
             n.dv.x += n.p.x - n.pp.x;
             n.dv.y += n.p.y - n.pp.y;
             n.dv.y -= self.gravity;
+            let cg = normalize_2(n.p);
+            n.dv.x += cg.x * self.central_gravity;
+            n.dv.y += cg.y * self.central_gravity;
         }
         //
         // turbo

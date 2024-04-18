@@ -6,6 +6,8 @@ import { three_wheel_drive } from "./games/three_wheel_drive.js"
 import { figure_eight } from "./games/figure_eight.js"
 import { inverted_pendulum } from "./games/inverted_pendulum.js"
 import { autopilot } from "./games/autopilot.js"
+import { pathmaker } from "./games/pathmaker.js"
+import { keepinside } from "./games/keepinside.js"
 
 
 const games = {
@@ -14,6 +16,8 @@ const games = {
     'figure_eight': figure_eight,
     'inverted_pendulum': inverted_pendulum,
     'autopilot': autopilot,
+    'pathmaker': pathmaker,
+    'keepinside': keepinside,
 }
 
 
@@ -32,7 +36,7 @@ const main = (wasm) => {
         </div>
         <canvas id="canvas"></canvas>
     `
-    launch(games['autopilot'], Simulation, wasm)
+    launch(games['keepinside'], Simulation, wasm)
 }
 
 

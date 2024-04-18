@@ -64,7 +64,8 @@ const three_wheel_drive = (Simulation, wasm, context) => {
                 ]) {
                 m.run(s, m)
             }
-        }
+        },
+        render: () => {}
     }
 }
 

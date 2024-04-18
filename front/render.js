@@ -36,11 +36,11 @@ const render = (wasm, s, context, mouse, custom_render) => {
     const colors = ["#ddd", "#ff4", "#4ff"]
     for (let index = 0; index < links_count; index++) {
         let l = link(links_view, index, link_size, nodes_view, node_size);
-        line(context, l.a.p, l.b.p, "#ddd", 1)
+        line(context, l.a.p, l.b.p, "#ddd", 2)
     }
     for (let index = 0; index < nodes_count; index++) {
         let n = node(nodes_view, index, node_size);
-        fill_circle(context, n.p, s.diameter*1.5, colors[n.z])
+        // fill_circle(context, n.p, s.diameter*1.5, colors[n.z])
         // fill_circle(context, {x:n.p.x-n.dv.x*3.5, y:n.p.y-n.dv.y*3.5}, s.diameter*1.3, colors[n.z])
         // fill_circle(context, {x:n.p.x-n.dv.x*7, y:n.p.y-n.dv.y*7}, s.diameter*1.0, colors[n.z])
     }
@@ -134,4 +134,7 @@ export {
     resize,
     context_coordinates_2,
     set_draw_center,
+    clear,
+    line,
+    drawer,
 }

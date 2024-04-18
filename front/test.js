@@ -33,6 +33,7 @@ const test = (wasm,Simulation ) => {
         crdp2: 0.0,
         diameter: 0.01,
         gravity: 0.0000005,
+        central_gravity: 0.0,
         ticker: 20,
         friction_ratio: 0.0,
         max_speed: 10000.0,
