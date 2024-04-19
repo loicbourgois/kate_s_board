@@ -6,7 +6,7 @@ const assert_equal = (a, b, m) => {
     if ( Math.abs(a - b) > 0.000001 ) {
         console.error(m, a, b)
     } else {
-        // console.log(m, a, b)
+        console.log(m, a, b)
     }
 }
 
@@ -22,6 +22,8 @@ const assert_equal_triple = (a, b, c, m) => {
     }
     else if ( Math.abs(b - c) > 0.000001 ) {
         console.error(m, a, b, c)
+    }else {
+        console.log(m, a, b,c)
     }
 }
 

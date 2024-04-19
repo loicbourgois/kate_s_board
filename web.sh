@@ -10,8 +10,8 @@ cargo fmt \
 #     --manifest-path $HOME/github.com/loicbourgois/vellipsis/engine/Cargo.toml
 cd $HOME/github.com/loicbourgois/vellipsis/wasm-engine
 wasm-pack build --release --target web --no-typescript --no-pack
-cp $HOME/github.com/loicbourgois/vellipsis/wasm-engine/pkg/wasm* \
-    $HOME/github.com/loicbourgois/vellipsis/front
+cp $HOME/github.com/loicbourgois/vellipsis/wasm-engine/pkg/vellipsis_wasm* \
+    $HOME/github.com/loicbourgois/vellipsis/front/vellipsis
 echo "################################"
 echo "# Frontend at http://localhost #"
 echo "################################"
