@@ -27,7 +27,10 @@ pub fn get_colors() -> HashMap<String, [u8; 3]> {
 
 fn data_to_img(path: &str, data: &Vec<(usize, f64, String)>, max_w: f64) {
     let colors = get_colors();
-    let wh = WH { w: 3000, h: 2000 };
+    let wh = WH {
+        w: 3000.min(data.len() as u32),
+        h: 2000.min(data.len() as u32),
+    };
     if data.is_empty() {
         return;
     }
@@ -66,11 +69,20 @@ fn data_to_img(path: &str, data: &Vec<(usize, f64, String)>, max_w: f64) {
 }
 
 fn main() {
-    run_1();
-    run_2();
-    run_3();
-    run_4();
-    run_5();
+    let runs = [
+        run_1,
+        // run_2,
+        // run_3,
+        // run_4,
+        // run_5,
+        // run_6,
+    ];
+    let l = runs.len();
+    for (i, x) in runs.iter().enumerate() {
+        let ii = i + 1;
+        println!("# {ii}/{l}");
+        x();
+    }
 }
 
 fn get_config_str() -> String {
@@ -84,6 +96,7 @@ fn get_config_str() -> String {
         ticker: 10,
         friction_ratio: 0.0,
         max_speed: 0.01,
+        central_gravity: 0.0,
     })
     .unwrap()
 }
@@ -91,27 +104,28 @@ fn get_config_str() -> String {
 fn run_1() {
     let mut s = Simulation::new(get_config_str());
     let mut rng = rand::thread_rng();
-    for _ in 0..5000 {
+    let node_count = 5000;
+    println!("nodes: {node_count}");
+    for _ in 0..node_count {
         s.add_node(rng.gen::<f64>() * 1.0, rng.gen::<f64>() * 1.0, false);
     }
-    let step_count = 10;
+    let step_count = 100;
     let now = Instant::now();
-    println!("start");
+    let mut data: Vec<(usize, f64, String)> = Vec::new();
     for i in 0..step_count {
         s.sub_tick();
         let t = (now.elapsed().as_nanos() / (i + 1)) as f64 / 1_000_000_000.0;
-        println!("t: {t}");
+        data.push((i as usize, t, "#0".to_owned()));
+        data.push((i as usize, 0.0, "#1".to_owned()));
+        data.push((i as usize, 0.01, "#2".to_owned()));
     }
-    let t = (now.elapsed().as_nanos() / step_count) as f64 / 1_000_000_000.0;
-    println!("end    {t}");
+    let t = (now.elapsed().as_nanos() / step_count as u128) as f64 / 1_000_000.0;
+    println!("step duration: {t:1} ms");
+    let ups = 1000.0 / t;
+    println!("ups: {ups}");
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/01-01.png",
-        &s.get_data_1(),
-        step_count as f64,
-    );
-    data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/01-02.png",
-        &s.get_data_2(),
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/01-01.png",
+        &data,
         step_count as f64,
     );
 }
@@ -128,12 +142,12 @@ fn run_2() {
         s.sub_tick();
     }
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/02-01.png",
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/02-01.png",
         &s.get_data_1(),
         step_count as f64,
     );
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/02-02.png",
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/02-02.png",
         &s.get_data_2(),
         step_count as f64,
     );
@@ -151,12 +165,12 @@ fn run_3() {
         s.sub_tick();
     }
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/03-01.png",
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/03-01.png",
         &s.get_data_1(),
         step_count as f64,
     );
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/03-02.png",
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/03-02.png",
         &s.get_data_2(),
         step_count as f64,
     );
@@ -177,12 +191,12 @@ fn run_4() {
         s.sub_tick();
     }
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/04-01.png",
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/04-01.png",
         &s.get_data_1(),
         step_count as f64,
     );
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/04-02.png",
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/04-02.png",
         &s.get_data_2(),
         step_count as f64,
     );
@@ -203,12 +217,12 @@ fn run_5() {
         s.sub_tick();
     }
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/05-01.png",
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/05-01.png",
         &s.get_data_1(),
         step_count as f64,
     );
     data_to_img(
-        "/Users/loicbourgois/github.com/loicbourgois/kate_s_board/data/05-02.png",
+        "/Users/loicbourgois/github.com/loicbourgois/vellipsis/data/05-02.png",
         &s.get_data_2(),
         step_count as f64,
     );

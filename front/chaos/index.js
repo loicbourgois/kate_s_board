@@ -25,13 +25,6 @@ const tick = (simulation, graphics) => {
         )
     }
     simulation.tick()
-    for (const m of [
-        m1, 
-        m2, m2_2, 
-        m3,
-    ]) {
-        m.run(simulation, m)
-    }
     const d = performance.now() - start
     let m = `${d} ms`
     if (d < 10) {
@@ -52,7 +45,7 @@ const tick = (simulation, graphics) => {
 }
 const colors = ["#ddd", "#ff4", "#4ff"]
 const render = (simulation, graphics) => {
-    graphics.clear()
+    graphics.clear_partial()
     for (const l of simulation.links()) {
         graphics.line(l.a.p, l.b.p, "#ddd", 2)
     }
@@ -67,58 +60,19 @@ const data = {
     previous_state: null,
 }
 const simulation = await Vellipsis.create({
-    crdv: 8.0,
-    crdp: 1.0,
-    crdv2: 0.01,
-    crdp2: 0.001,
+    crdv: 70.0,
+    crdp: 0.0,
+    crdv2: 0.2,
+    crdp2: 0.0,
     diameter: 0.008,
-    gravity: 0.0000008,
-    central_gravity: 0.0,
-    ticker: 10,
+    gravity: 0.0,
+    central_gravity: -0.00009,
+    ticker: 1,
     friction_ratio: 0.3,
-    max_speed: 0.001,
+    max_speed: 0.01,
 })
-simulation.add_bezier(
-    JSON.stringify([
-        {
-            x: -0.5,
-            y: 0.4,
-        }, {
-            x: -0.1,
-            y: -.01,
-        }, {
-            x: 0.1,
-            y: -.01,
-        }, {
-            x: 0.5,
-            y: 0.2,
-        }
-    ]), 
-    0.9
-)
-const a = {
-    x: -0.05,
-    y: .5,
-}
-const b = {
-    x: 0.05,
-    y: .5,
-}
-const c = {
-    x: 0.15,
-    y: .5,
-}
-const w1 = simulation.add_wheel(a, 12)
-const w2 = simulation.add_wheel(b, 12)
-const w3 = simulation.add_wheel(c, 12)
-const i2 = simulation.add_link(w1.cidx, w2.cidx, 0.1, 0.5, 10.0)
-const i3 = simulation.add_link(w2.cidx, w3.cidx, 0.1, 0.5, 10.0)
-const m1 = simulation.add_motor(w1, w2.cidx, 0.25)
-const m2 = simulation.add_motor(w2, w1.cidx, 0.75)
-const m2_2 = simulation.add_motor(w2, w3.cidx, 0.25)
-const m3 = simulation.add_motor(w3, w2.cidx, 0.75)
-for (let index = 0; index < 400; index++) {
-    simulation.add_node(Math.random()*0.2 - 0.15, Math.random()*0.2 + 0.25, false)
+for (let index = 0; index < 5000; index++) {
+    simulation.add_node(Math.random()*0.3-0.15, Math.random()*0.3-0.15, false)
 }
 document.body.innerHTML = `
     <div id="left">
@@ -137,9 +91,8 @@ document.body.innerHTML = `
 const graphics = new Graphics("canvas")
 document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
 graphics.resize_canvas()
-graphics.draw_center = [0,0.3]
+graphics.draw_zoom = 0.8
 graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
-// graphics.context.canvas.addEventListener('click', click(simulation))
 graphics.context.canvas.addEventListener('mousedown', () => {
     data.add_node = true
 })

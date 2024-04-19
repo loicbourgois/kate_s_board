@@ -13,6 +13,9 @@ body {
     display: flex;
     background: #111;
 }
+p {
+  white-space:pre;
+}
 #right {
     position: absolute;
     display: flex;
