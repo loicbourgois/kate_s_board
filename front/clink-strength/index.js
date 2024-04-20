@@ -58,8 +58,8 @@ const render = (simulation, graphics) => {
         }
         r = parseInt(r*255)
         g = parseInt(g*255)
-        let b = g
-        graphics.line(l.a.p, l.b.p, `rgb(${r}, ${g}, ${b})`, 1)
+        let b = parseInt(0)
+        graphics.line(l.a.p, l.b.p, `rgb(${r}, ${g}, ${g})`, 1)
         if (l.stress > limit ) {
             console.log("zoop")
             console.log(l.idx, l.uid)

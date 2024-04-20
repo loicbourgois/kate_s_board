@@ -420,6 +420,13 @@ export class Simulation {
         return ret >>> 0;
     }
     /**
+    * @returns {number}
+    */
+    uid() {
+        const ret = wasm.simulation_uid(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
     * @param {number} a
     * @param {number} b
     * @param {number} l
@@ -430,6 +437,13 @@ export class Simulation {
     add_link(a, b, l, s, damping) {
         const ret = wasm.simulation_add_link(this.__wbg_ptr, a, b, l, s, damping);
         return ret >>> 0;
+    }
+    /**
+    * @param {number} idx
+    * @param {number} uid
+    */
+    delete_link(idx, uid) {
+        wasm.simulation_delete_link(this.__wbg_ptr, idx, uid);
     }
     /**
     * @param {number} a

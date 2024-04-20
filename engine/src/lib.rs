@@ -26,9 +26,11 @@ pub struct Link {
     l: f64,
     s: f64,
     damping: f64,
+    stress: f64,
     a: usize,
     b: usize,
-    stress: f64,
+    uid: usize,
+    active: bool,
 }
 
 pub struct Clink {
@@ -68,6 +70,7 @@ pub struct Simulation {
     grid: HashMap<(isize, isize), Vec<usize>>,
     linked: HashMap<usize, HashSet<usize>>,
     entities: Vec<Entity>,
+    uid_counter: usize,
 }
 
 #[derive(Clone)]
@@ -138,6 +141,7 @@ impl Simulation {
             grid: HashMap::new(),
             linked: HashMap::new(),
             entities: Vec::new(),
+            uid_counter: 0,
         }
     }
 
@@ -380,34 +384,12 @@ impl Simulation {
                 }
             }
         }
-
-        // for n1 in &self.nodes {
-        //     for n2 in &self.nodes {
-        //         if n1.idx >= n2.idx {
-        //             continue;
-        //         }
-        //         if n1.fixed && n2.fixed {
-        //             continue;
-        //         }
-        //         if n1.z != n2.z {
-        //             continue;
-        //         }
-        //         let d_sqrd = distance_sqrd(n1.p, n2.p);
-        //         if d_sqrd <= diam_sqrd {
-        //             pairs.push((n1.idx, n2.idx, d_sqrd));
-        //         }
-        //     }
-        // }
-
-        // println!("pairs: {}", pairs.len());
-
         unsafe {
             let nodes_1 = &mut (*nodes_ptr);
             let nodes_2 = &mut (*nodes_ptr);
             for (pair, d_sqrd) in pairs {
                 let mut n1 = &mut nodes_1[pair.0];
                 let mut n2 = &mut nodes_2[pair.1];
-                // let d_sqrd = pair.2;
                 let dist = d_sqrd.sqrt();
                 let delta_position = delta(&n1.p, &n2.p);
                 let crdv = if !n1.fixed && !n2.fixed {
@@ -430,7 +412,6 @@ impl Simulation {
                 n1.dp.y += u2 * crdp_crdv;
                 n2.dp.x -= u3 * crdp_crdv;
                 n2.dp.y -= u4 * crdp_crdv;
-
                 let crdv2 = if !n1.fixed && !n2.fixed {
                     self.crdv2
                 } else {
@@ -469,6 +450,9 @@ impl Simulation {
             let nodes_1 = &mut (*nodes_ptr);
             let nodes_2 = &mut (*nodes_ptr);
             for l in &mut self.links {
+                if !l.active {
+                    continue;
+                }
                 let mut n1 = &mut nodes_1[l.a];
                 let mut n2 = &mut nodes_2[l.b];
                 let dist = distance(n1.p, n2.p);
@@ -698,8 +682,14 @@ impl Simulation {
         idx
     }
 
+    pub fn uid(&mut self) -> usize {
+        self.uid_counter += 1;
+        self.uid_counter
+    }
+
     pub fn add_link(&mut self, a: usize, b: usize, l: f64, s: f64, damping: f64) -> usize {
         let idx = self.links.len();
+        let uid = self.uid();
         for (i1, i2) in [(a, b), (b, a)] {
             match self.linked.get_mut(&i1) {
                 Some(x) => {}
@@ -716,8 +706,19 @@ impl Simulation {
             s,
             damping,
             stress: 0.0,
+            uid,
+            active: true,
         });
         idx
+    }
+
+    pub fn delete_link(&mut self, idx: usize, uid: usize) {
+        let mut l = &mut self.links[idx];
+        assert!(l.uid == uid);
+        // assert!(l.active);
+        l.active = false;
+        self.linked.get_mut(&l.a).unwrap().remove(&l.b);
+        self.linked.get_mut(&l.b).unwrap().remove(&l.a);
     }
 
     pub fn add_clink(
@@ -778,7 +779,7 @@ impl Simulation {
     }
 
     pub fn link_size(&self) -> usize {
-        5 * 8
+        4 * 8 + 4 * 4
     }
 
     pub fn links_count(&self) -> usize {
