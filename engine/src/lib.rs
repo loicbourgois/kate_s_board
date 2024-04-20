@@ -28,6 +28,7 @@ pub struct Link {
     damping: f64,
     a: usize,
     b: usize,
+    stress: f64,
 }
 
 pub struct Clink {
@@ -467,12 +468,13 @@ impl Simulation {
         unsafe {
             let nodes_1 = &mut (*nodes_ptr);
             let nodes_2 = &mut (*nodes_ptr);
-            for l in &self.links {
+            for l in &mut self.links {
                 let mut n1 = &mut nodes_1[l.a];
                 let mut n2 = &mut nodes_2[l.b];
                 let dist = distance(n1.p, n2.p);
                 let d = delta(&n1.p, &n2.p);
                 let dd = dist - l.l;
+                l.stress = dd / l.l;
                 let u1 = dd * d.x * l.s;
                 let u2 = dd * d.y * l.s;
                 let u3 = dd * d.x * l.s;
@@ -713,6 +715,7 @@ impl Simulation {
             l,
             s,
             damping,
+            stress: 0.0,
         });
         idx
     }
@@ -775,7 +778,7 @@ impl Simulation {
     }
 
     pub fn link_size(&self) -> usize {
-        4 * 8
+        5 * 8
     }
 
     pub fn links_count(&self) -> usize {
