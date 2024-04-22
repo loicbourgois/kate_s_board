@@ -1,6 +1,7 @@
 
 import { node } from "./node.js";
 import { link } from "./link.js";
+import { Vellipsis } from "../vellipsis/vellipsis.js";
 
 const assert_equal = (a, b, m) => {
     if ( Math.abs(a - b) > 0.000001 ) {
@@ -27,8 +28,8 @@ const assert_equal_triple = (a, b, c, m) => {
     }
 }
 
-const test = (wasm,Simulation ) => {
-    let s = Simulation.new(JSON.stringify({
+const test = async (wasm, Simulation ) => {
+    const s = await Vellipsis.create({
         crdv: 4.0,
         crdp: 2.0,
         crdv2: 0.0,
@@ -39,16 +40,19 @@ const test = (wasm,Simulation ) => {
         ticker: 20,
         friction_ratio: 0.0,
         max_speed: 10000.0,
-    }))
+    })
     s.test_assign_nodes()
+    s.add_node(0, 1, false)
     s.add_link(0, 1, 0.1, 0.2, 0.3);
-    s.add_link(0, 1, -0.1, -0.2, -0.3);
+    s.add_link(0, 2, -0.1, -0.2, -0.3);
+    s.delete_link(1,2)
     const nodes_ptr = s.nodes_ptr();
     const node_size = s.node_size();
     const nodes_view = new DataView(wasm.memory.buffer, nodes_ptr, s.nodes_size());
     const links_ptr = s.links_ptr();
     const link_size = s.link_size();
     const links_view = new DataView(wasm.memory.buffer, links_ptr, s.links_size());
+    console.log(`link_size: ${link_size}`)
     let n0 = node(nodes_view, 0, node_size);
     let n1 = node(nodes_view, 1, node_size);
     let l0 = link(links_view, 0, link_size, nodes_view, node_size);
@@ -68,6 +72,7 @@ const test = (wasm,Simulation ) => {
     assert_equal_triple(n0.turbo_rate, -n1.turbo_rate, 13.0, "turbo_rate")
     assert_equal_triple(n0.direction.x, -n1.direction.x, 14.0, "direction.x")
     assert_equal_triple(n0.direction.y, -n1.direction.y, 15.0, "direction.y")
+    assert_equal_triple(n0.kind, n1.kind, 16, "kind")
     assert_equal(n0.fixed, 1, "n0.fixed")
     assert_equal(n1.fixed, 0, "n1.fixed")
     assert_equal(n0.z, 101, "n0.z")
@@ -79,6 +84,22 @@ const test = (wasm,Simulation ) => {
     assert_equal_triple(l0.damping, -l1.damping, 0.3, "l.damping")
     assert_equal_triple(l0.a.p.x, l1.a.p.x, 1, "l.a.p.x")
     assert_equal_triple(l0.a.p.y, -l0.b.p.y, 2,"l.p.y")
+    assert_equal(l0.active,  1, "l.active")
+    assert_equal(l1.active,  0, "l.active")
+    for (let index = 0; index < 100; index++) {
+        let uu = s.add_node(Math.random(), Math.random(), false)
+        let idx = s.add_link(0, uu, Math.random(), Math.random(), Math.random());
+        if (Math.random() > 0.5 ) {
+            s.delete_link(idx,index+3)
+        }
+    }
+    for (const l of s.links()) {
+        if (l.active === 0 || l.active === 1) {
+
+        } else {
+            console.error("invalid active")
+        }
+    }
 }
 
 

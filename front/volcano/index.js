@@ -24,11 +24,11 @@ const update_mouse = (graphics, simulation) => {
 const tick = (simulation, graphics) => {
     const start = performance.now()
     if (data.add_node) {
-        simulation.add_node(
-            data.mouse.p.x + Math.random() * simulation.diameter - simulation.diameter*0.5, 
-            data.mouse.p.y + Math.random() * simulation.diameter - simulation.diameter*0.5, 
-            false
-        )
+        simulation.add_node_js({
+            x: data.mouse.p.x + Math.random() * simulation.diameter - simulation.diameter*0.5,
+            y: data.mouse.p.y + Math.random() * simulation.diameter - simulation.diameter*0.5,
+            kind: get_kind(),
+        })
     }
     simulation.tick()
     document.getElementById("physic").innerHTML = get_elapsed_formatted(start)
@@ -39,14 +39,22 @@ const tick = (simulation, graphics) => {
         tick(simulation, graphics)
     })
 }
-const colors = ["#ddd", "#ff4", "#4ff"]
+const colors = ["#525657", "#ff4", "#F44"]
 const render = (simulation, graphics) => {
     graphics.clear_partial()
     for (const n of simulation.nodes()) {
-        graphics.fill_circle(n.p, simulation.diameter, colors[n.z])
+        if ( n.active!==1 ) {
+            continue
+        }
+        if (isNaN(n.p.x)) {
+            simulation.delete_node(n.idx)
+            console.error(n)
+            // throw "isNaN(p.n.x)"
+        }
+        graphics.fill_circle(n.p, simulation.diameter*1.5, colors[n.kind])
     }
     for (const l of simulation.links()) {
-        if (!l.active) {
+        if ( l.active!==1 ) {
             continue
         }
         const limit = 0.4
@@ -59,14 +67,14 @@ const render = (simulation, graphics) => {
         r = parseInt(r*255)
         g = parseInt(g*255)
         let b = parseInt(0)
-        graphics.line(l.a.p, l.b.p, `rgb(${r}, ${g}, ${g})`, 1)
         if (l.stress > limit ) {
-            console.log("zoop")
-            console.log(l.idx, l.uid)
             simulation.delete_link(l.idx, l.uid)
         }
     }
     document.getElementById("nodes_count").innerHTML = simulation.nodes_count()
+    document.getElementById("links_count").innerHTML = simulation.links_count()
+    document.getElementById("links_inactive_count").innerHTML = simulation.links_inactive_count()
+    document.getElementById("nodes_inactive_count").innerHTML = simulation.nodes_inactive_count()
 }
 const data = {
     mouse: {},
@@ -75,16 +83,21 @@ const data = {
 }
 const simulation = await Vellipsis.create({
     crdv: 10.0,
-    crdp: 10.0,
+    crdp: 0.2,
     crdv2: 0.0,
     crdp2: 0.0,
     diameter: 0.01,
     gravity: 0.00001,
     central_gravity: 0.0,
-    ticker: 9,
-    friction_ratio: 0.1,
+    ticker: 2,
+    friction_ratio: 0.0,
     max_speed: 0.001,
 })
+simulation.add_kind('rock')
+simulation.add_kind('fire_1')
+simulation.add_kind('fire_2')
+simulation.set_friction_ratio('fire_2', 'fire_2', 1.)
+simulation.set_friction_ratio('fire_1', 'fire_1', 0.)
 const add_line = (c) => {
     const p1 = {
         x: c.ab[0],
@@ -101,10 +114,13 @@ const add_line = (c) => {
         x: n.x * simulation.diameter,
         y: n.y * simulation.diameter,
     }
-    let id1 = undefined
-    let id2 = simulation.add_node(p1.x, p1.y, true)
+    simulation.add_node_js({
+        x: p1.x, 
+        y: p1.y,
+        kind: c.kind,
+        fixed: true,
+    })
     let i = 1
-    let fixed = true
     while (true) {
         const p3 = {
             x: p1.x + v.x * i,
@@ -113,41 +129,108 @@ const add_line = (c) => {
         if (distance(p1, p3) > dist) {
             break
         }
-        const id3 = simulation.add_node(p3.x, p3.y, fixed)
-        fixed = false
-        simulation.add_link(id2, id3, c.link_length, c.link_strength, c.link_damping)
-        if (id1 != undefined) {
-            simulation.add_clink(id1, id2, id3, 0.5, 1.0, 10.0);
-        }
-        id1 = id2
-        id2 = id3
+        simulation.add_node_js({
+            x: p3.x, 
+            y: p3.y,
+            kind: c.kind,
+            fixed: true,
+        })
         i++
     }
 }
 
-const link_strength = 4
-const link_damping = 1.0
-const link_length = simulation.diameter 
 add_line({
-    ab: [0.0, 0.0, -0.1, 0.0],
-    link_strength: link_strength,
-    link_damping: link_damping,
-    link_length: simulation.diameter,
+    ab: [-1.0, -0.2, -0.1, -0.2],
+    kind: 'rock'
 })
 add_line({
-    ab: [0.0, 0.01, -0.1, 0.01],
-    link_strength: link_strength,
-    link_damping: link_damping,
-    link_length: simulation.diameter,
+    ab: [1.0, -0.2, 0.1, -0.2],
+    kind: 'rock'
 })
-for (let index = 0; index < 10; index++) {
-    const id1 = index
-    const id2 = index + 12
-    const id3 = index + 11
-    const id4 = index + 1
-    simulation.add_link(id1, id2, link_length*1.2, link_strength, link_damping)
-    simulation.add_link(id4, id3, link_length*1.2, link_strength, link_damping)
+
+
+add_line({
+    ab: [-0.05, -0.1, -0.1, -0.2],
+    kind: 'rock'
+})
+add_line({
+    ab: [0.05, -0.1, 0.1, -0.2],
+    kind: 'rock'
+})
+
+add_line({
+    ab: [-0.05, -0.1, -0.03, 0.02],
+    kind: 'rock'
+})
+add_line({
+    ab: [0.05, -0.1, 0.03, 0.02],
+    kind: 'rock'
+})
+add_line({
+    ab: [0.02, 0.0, 0.03, 0.02],
+    kind: 'rock'
+})
+add_line({
+    ab: [-0.02, 0.0, -0.03, 0.02],
+    kind: 'rock'
+})
+add_line({
+    ab: [0.02, 0.0, -0.02, 0.0],
+    kind: 'rock'
+})
+add_line({
+    ab: [0.02, 0.0, -0.02, 0.0],
+    kind: 'rock'
+})
+add_line({
+    ab: [0.02, 0.0, -0.02, 0.0],
+    kind: 'rock'
+})
+// add_line({
+//     ab: [0.02, -0.001, -0.01, -0.001],
+//     kind: 'rock'
+// })
+// add_line({
+//     ab: [0.02, -0.002, -0.01, -0.002],
+//     kind: 'rock'
+// })
+// add_line({
+//     ab: [-0.3, -0.1, 0.2, -0.2],
+// })
+// add_line({
+//     ab: [-0.5, -0.3, 0.2, -0.4],
+// })
+// add_line({
+//     ab: [0.5, -0.3, 0.2, -0.4],
+// })
+// add_line({
+//     ab: [-1, -0.6, 1, -0.6],
+// })
+
+const get_kind = () => {
+    if (Math.random() > 0.5) {
+        return 'fire_1'
+    }  else {
+        return 'fire_2'
+    }
 }
+
+setInterval(()=> {
+    simulation.add_node_js({
+        x: 0.01 + 0.001 * (Math.random() -0.5),
+        y: 0.01, 
+        dx: -0.00,
+        dy: 0.001,
+        kind: get_kind(),
+    })
+    simulation.add_node_js({
+        x: -0.01 + 0.001 * (Math.random() -0.5),
+        y: 0.01, 
+        dx: -0.00,
+        dy: 0.001,
+        kind: get_kind(),
+    })
+}, 0)
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">
@@ -158,6 +241,9 @@ document.body.innerHTML = `
             <p>physics:  <span id="physic"></span></p>
             <p>graphics: <span id="graphics"></span></p>
             <p>nodes: <span id="nodes_count"></span></p>
+            <p>inactive nodes: <span id="nodes_inactive_count"></span></p>
+            <p>links: <span id="links_count"></span></p>
+            <p>inactive links: <span id="links_inactive_count"></span></p>
         </div>
     </div>
     <canvas id="canvas"></canvas>
@@ -165,7 +251,7 @@ document.body.innerHTML = `
 const graphics = new Graphics("canvas")
 document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
 graphics.resize_canvas()
-graphics.draw_zoom = 2.0
+graphics.draw_zoom = 1
 graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
 graphics.context.canvas.addEventListener('mousedown', () => {
     data.add_node = true

@@ -24,11 +24,12 @@ const update_mouse = (graphics, simulation) => {
 const tick = (simulation, graphics) => {
     const start = performance.now()
     if (data.add_node) {
-        simulation.add_node(
-            data.mouse.p.x + Math.random() * simulation.diameter - simulation.diameter*0.5, 
-            data.mouse.p.y + Math.random() * simulation.diameter - simulation.diameter*0.5, 
-            false
-        )
+        simulation.add_node_js({
+            x: data.mouse.p.x + Math.random() * simulation.diameter - simulation.diameter*0.5,
+            y: data.mouse.p.y + Math.random() * simulation.diameter - simulation.diameter*0.5,
+            // dx: 0.01,
+            kind: 'default',
+        })
     }
     simulation.tick()
     document.getElementById("physic").innerHTML = get_elapsed_formatted(start)
@@ -44,6 +45,10 @@ const render = (simulation, graphics) => {
     graphics.clear_partial()
     for (const n of simulation.nodes()) {
         graphics.fill_circle(n.p, simulation.diameter, colors[n.z])
+        if (isNaN(n.p.x)) {
+            console.error(n)
+            throw "isNaN(n.p.x)"
+        }
     }
     for (const l of simulation.links()) {
         if (!l.active) {
@@ -74,79 +79,27 @@ const data = {
     previous_state: null,
 }
 const simulation = await Vellipsis.create({
-    crdv: 10.0,
-    crdp: 10.0,
+    crdv: 1.0,
+    crdp: 0.0,
     crdv2: 0.0,
     crdp2: 0.0,
     diameter: 0.01,
     gravity: 0.00001,
     central_gravity: 0.0,
-    ticker: 9,
-    friction_ratio: 0.1,
+    ticker: 1,
+    friction_ratio: 0.0,
     max_speed: 0.001,
 })
-const add_line = (c) => {
-    const p1 = {
-        x: c.ab[0],
-        y: c.ab[1],
-    }
-    const p2 = {
-        x: c.ab[2],
-        y: c.ab[3],
-    }
-    const delt = delta(p1, p2)
-    const dist = distance(p1, p2)
-    const n = normalize(delt)
-    const v = {
-        x: n.x * simulation.diameter,
-        y: n.y * simulation.diameter,
-    }
-    let id1 = undefined
-    let id2 = simulation.add_node(p1.x, p1.y, true)
-    let i = 1
-    let fixed = true
-    while (true) {
-        const p3 = {
-            x: p1.x + v.x * i,
-            y: p1.y + v.y * i,
-        }
-        if (distance(p1, p3) > dist) {
-            break
-        }
-        const id3 = simulation.add_node(p3.x, p3.y, fixed)
-        fixed = false
-        simulation.add_link(id2, id3, c.link_length, c.link_strength, c.link_damping)
-        if (id1 != undefined) {
-            simulation.add_clink(id1, id2, id3, 0.5, 1.0, 10.0);
-        }
-        id1 = id2
-        id2 = id3
-        i++
-    }
-}
+simulation.add_kind('default')
+simulation.add_kind('glue')
+simulation.add_kind('wall')
+simulation.set_friction_ratio('glue', 'wall', 0.3)
 
-const link_strength = 4
-const link_damping = 1.0
-const link_length = simulation.diameter 
-add_line({
-    ab: [0.0, 0.0, -0.1, 0.0],
-    link_strength: link_strength,
-    link_damping: link_damping,
-    link_length: simulation.diameter,
-})
-add_line({
-    ab: [0.0, 0.01, -0.1, 0.01],
-    link_strength: link_strength,
-    link_damping: link_damping,
-    link_length: simulation.diameter,
-})
-for (let index = 0; index < 10; index++) {
-    const id1 = index
-    const id2 = index + 12
-    const id3 = index + 11
-    const id4 = index + 1
-    simulation.add_link(id1, id2, link_length*1.2, link_strength, link_damping)
-    simulation.add_link(id4, id3, link_length*1.2, link_strength, link_damping)
+simulation.add_node(0.0, 0, false)
+simulation.add_node(0.01, 0, false)
+
+for (const n of simulation.nodes()) {
+    console.log(n.idx, n.p)
 }
 document.body.innerHTML = `
     <div id="left">
@@ -165,7 +118,7 @@ document.body.innerHTML = `
 const graphics = new Graphics("canvas")
 document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
 graphics.resize_canvas()
-graphics.draw_zoom = 2.0
+graphics.draw_zoom = .4
 graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
 graphics.context.canvas.addEventListener('mousedown', () => {
     data.add_node = true

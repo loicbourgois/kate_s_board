@@ -12,7 +12,7 @@ const link = (link_view, idx, link_size, node_view, node_size) => {
         a: node(node_view, link_view.getUint32(i+8*4, true), node_size),
         b: node(node_view, link_view.getUint32(i+8*4+4, true), node_size),
         uid: link_view.getUint32(i+8*5, true),
-        active: link_view.getUint32(i+8*5+4, true),
+        active: link_view.getUint8(i+8*5+4, true),
     }
 }
 

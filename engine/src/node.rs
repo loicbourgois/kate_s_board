@@ -16,6 +16,17 @@ pub struct NodeConfig {
     pub fixed: bool,
 }
 
+#[derive(Deserialize, Serialize)]
+pub struct NodeConfig2 {
+    pub x: f64,
+    pub y: f64,
+    pub turbo_max_speed: Option<f64>,
+    pub fixed: Option<bool>,
+    pub dx: Option<f64>,
+    pub dy: Option<f64>,
+    pub kind: String,
+}
+
 pub struct Node {
     pub p: Vector,
     pub pp: Vector,
@@ -29,5 +40,7 @@ pub struct Node {
     pub turbo_rate: f64,
     pub z: usize,
     pub idx: usize,
+    pub kind: usize,
+    pub active: u8,
     pub fixed: bool,
 }

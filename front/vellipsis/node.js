@@ -1,6 +1,7 @@
 const node = (view, idx, node_size) => {
     const i = idx * node_size;
     return {
+        idx: idx,
         p: {
             x: view.getFloat64(i, true),
             y: view.getFloat64(i+8, true),
@@ -34,7 +35,9 @@ const node = (view, idx, node_size) => {
         turbo_rate: view.getFloat64(i+8*15, true),
         z: view.getUint32(i+8*16, true),
         idx: view.getUint32(i+8*16+4, true),
-        fixed: view.getUint32(i+8*17, true),
+        kind: view.getUint32(i+8*17, true),
+        active: view.getUint8(i+8*17+4, true),
+        fixed: view.getUint8(i+8*17+5, true),
     }
 }
 

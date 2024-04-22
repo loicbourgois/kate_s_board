@@ -73,12 +73,12 @@ pub fn find_angle(p2: Vector, p1: Vector, p3: Vector) -> f64 {
     let diff_y2 = p3.y - p1.y;
     let theta1 = diff_y1.atan2(diff_x1);
     let theta2 = diff_y2.atan2(diff_x2);
-    let mut diffTheta = theta2 - theta1;
-    if diffTheta < 0.0 {
-        diffTheta += 2.0 * std::f64::consts::PI;
+    let mut diff_theta = theta2 - theta1;
+    if diff_theta < 0.0 {
+        diff_theta += 2.0 * std::f64::consts::PI;
     }
-    let angleDeg = (diffTheta * 180.0 / std::f64::consts::PI) % 360.0;
-    angleDeg / 360.0
+    let angle_deg = (diff_theta * 180.0 / std::f64::consts::PI) % 360.0;
+    angle_deg / 360.0
 }
 
 pub fn rotate(p1: Vector, p2: Vector, angle: f64) -> Vector {

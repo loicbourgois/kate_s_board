@@ -125,7 +125,7 @@ const add_line = (c) => {
     }
 }
 
-const link_strength = 4
+const link_strength = 30.0
 const link_damping = 1.0
 const link_length = simulation.diameter 
 add_line({
@@ -140,14 +140,24 @@ add_line({
     link_damping: link_damping,
     link_length: simulation.diameter,
 })
+
 for (let index = 0; index < 10; index++) {
     const id1 = index
     const id2 = index + 12
     const id3 = index + 11
     const id4 = index + 1
     simulation.add_link(id1, id2, link_length*1.2, link_strength, link_damping)
+    // simulation.add_link(id1, id3, link_length, link_strength, link_damping)
+
+    // simulation.add_link(id4, id2, link_length, link_strength, link_damping)
     simulation.add_link(id4, id3, link_length*1.2, link_strength, link_damping)
 }
+// add_line({
+//     ab: [0.0, 0.0, 0.15, 0.0],
+//     link_strength: 20.0,
+//     link_damping: 1000.0,
+//     link_length: simulation.diameter,
+// })
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">

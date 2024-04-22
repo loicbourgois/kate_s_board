@@ -1,4 +1,4 @@
-import init, {Simulation as Vellipsis} from "./vellipsis_wasm.js";
+import init, {Simulation as Vellipsis, set_panic_hook} from "./vellipsis_wasm.js";
 import { link } from "./link.js";
 import { node } from "./node.js";
 import { add_wheel } from "./elements/wheel.js"
@@ -7,12 +7,20 @@ import { add_motor } from "./elements/motor.js"
 
 Vellipsis.create = (config) => {
     return init().then( async (wasm) => {
+        set_panic_hook();
         let s = Vellipsis.new(JSON.stringify(config))
         s.add_wheel = (a, b) => {
             return add_wheel(s, a, b)
         }
         s.add_motor = (a, b, c) => {
             return add_motor(s, a, b, c)
+        }
+        s.add_node_js = (x) => {
+            const str_ = JSON.stringify(x)
+            // console.log(str_)
+            // const str_2 = JSON.stringify(x).replaceAll(":0,", ":0.0,")
+            // console.log(str_2)
+            return s.add_node_4(str_)
         }
         s.links = function* () {
             const nodes_ptr = s.nodes_ptr();
