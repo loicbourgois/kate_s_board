@@ -706,7 +706,6 @@ impl Simulation {
     }
 
     fn add_node_(&mut self, c: &NodeConfig2) -> usize {
-        let idx = self.nodes.len();
         let dx = match c.dx {
             Some(dx) => dx,
             None => 0.0,
@@ -725,10 +724,11 @@ impl Simulation {
         };
         let kind = self.kinds[&c.kind];
         let aa = self.nodes_inactive.iter().next();
-        let idx: usize = match aa {
-            Some(idx_) => *idx_,
-            None => self.nodes.len(),
-        };
+        // let idx: usize = match aa {
+        //     Some(idx_) => *idx_,
+        //     None => self.links.len(),
+        // };
+        let idx: usize = self.links.len();
         let node = Node {
             p: Vector { x: c.x, y: c.y },
             pp: Vector {
@@ -749,11 +749,12 @@ impl Simulation {
             grid: VectorIsize { x: 0, y: 0 },
             kind: kind,
         };
-        match aa {
-            Some(idx_) => self.nodes[*idx_] = node,
-            None => self.nodes.push(node),
-        };
-        self.nodes_inactive.remove(&idx);
+        // match aa {
+        //     Some(idx_) => self.nodes[*idx_] = node,
+        //     None => self.nodes.push(node),
+        // };
+        self.nodes.push(node);
+
         idx
     }
 
@@ -775,16 +776,11 @@ impl Simulation {
             None => {}
         };
         let uid = self.uid();
+
         let aa = self.links_inactive.iter().next();
         let idx: usize = match aa {
-            Some(idx_) => {
-                let idx = *idx_;
-                idx
-            }
-            None => {
-                let idx = self.links.len();
-                idx
-            }
+            Some(idx_) => *idx_,
+            None => self.links.len(),
         };
         let link = Link {
             a,
@@ -797,14 +793,11 @@ impl Simulation {
             active: 1,
         };
         match aa {
-            Some(idx_) => {
-                self.links[*idx_] = link;
-            }
+            Some(idx_) => self.links[*idx_] = link,
             None => {
                 self.links.push(link);
             }
         };
-        self.links_inactive.remove(&idx);
         for (i1, i2) in [(a, b), (b, a)] {
             match self.linked.get_mut(&i1) {
                 Some(_) => {}

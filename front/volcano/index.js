@@ -30,6 +30,20 @@ const tick = (simulation, graphics) => {
             kind: get_kind(),
         })
     }
+    simulation.add_node_js({
+        x: 0.01 + 0.001 * (Math.random() -0.5),
+        y: 0.01, 
+        dx: -0.00,
+        dy: 0.001,
+        kind: get_kind(),
+    })
+    simulation.add_node_js({
+        x: -0.01 + 0.001 * (Math.random() -0.5),
+        y: 0.01, 
+        dx: -0.00,
+        dy: 0.001,
+        kind: get_kind(),
+    })
     simulation.tick()
     document.getElementById("physic").innerHTML = get_elapsed_formatted(start)
     const render_start = performance.now()
@@ -50,6 +64,9 @@ const render = (simulation, graphics) => {
             simulation.delete_node(n.idx)
             console.error(n)
             // throw "isNaN(p.n.x)"
+        }
+        if (n.p.y < -0.5) {
+            simulation.delete_node(n.idx)
         }
         graphics.fill_circle(n.p, simulation.diameter*1.5, colors[n.kind])
     }
@@ -97,7 +114,7 @@ simulation.add_kind('rock')
 simulation.add_kind('fire_1')
 simulation.add_kind('fire_2')
 simulation.set_friction_ratio('fire_2', 'fire_2', 1.)
-simulation.set_friction_ratio('fire_1', 'fire_1', 0.)
+simulation.set_friction_ratio('fire_1', 'fire_1', 1.)
 const add_line = (c) => {
     const p1 = {
         x: c.ab[0],
@@ -139,12 +156,15 @@ const add_line = (c) => {
     }
 }
 
+
+const aa = 0.75
+
 add_line({
-    ab: [-1.0, -0.2, -0.1, -0.2],
+    ab: [-aa, -0.2, -0.1, -0.2],
     kind: 'rock'
 })
 add_line({
-    ab: [1.0, -0.2, 0.1, -0.2],
+    ab: [aa, -0.2, 0.1, -0.2],
     kind: 'rock'
 })
 
@@ -215,22 +235,22 @@ const get_kind = () => {
     }
 }
 
-setInterval(()=> {
-    simulation.add_node_js({
-        x: 0.01 + 0.001 * (Math.random() -0.5),
-        y: 0.01, 
-        dx: -0.00,
-        dy: 0.001,
-        kind: get_kind(),
-    })
-    simulation.add_node_js({
-        x: -0.01 + 0.001 * (Math.random() -0.5),
-        y: 0.01, 
-        dx: -0.00,
-        dy: 0.001,
-        kind: get_kind(),
-    })
-}, 0)
+// setInterval(()=> {
+//     simulation.add_node_js({
+//         x: 0.01 + 0.001 * (Math.random() -0.5),
+//         y: 0.01, 
+//         dx: -0.00,
+//         dy: 0.001,
+//         kind: get_kind(),
+//     })
+//     simulation.add_node_js({
+//         x: -0.01 + 0.001 * (Math.random() -0.5),
+//         y: 0.01, 
+//         dx: -0.00,
+//         dy: 0.001,
+//         kind: get_kind(),
+//     })
+// }, 0)
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">
@@ -251,7 +271,7 @@ document.body.innerHTML = `
 const graphics = new Graphics("canvas")
 document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
 graphics.resize_canvas()
-graphics.draw_zoom = 1
+graphics.draw_zoom = 1.2
 graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
 graphics.context.canvas.addEventListener('mousedown', () => {
     data.add_node = true
