@@ -106,15 +106,18 @@ const simulation = await Vellipsis.create({
     diameter: 0.01,
     gravity: 0.00001,
     central_gravity: 0.0,
-    ticker: 2,
+    ticker: 1,
     friction_ratio: 0.0,
     max_speed: 0.001,
 })
 simulation.add_kind('rock')
 simulation.add_kind('fire_1')
 simulation.add_kind('fire_2')
-simulation.set_friction_ratio('fire_2', 'fire_2', 1.)
-simulation.set_friction_ratio('fire_1', 'fire_1', 1.)
+simulation.set_friction_ratio('fire_2', 'fire_2', 0.3)
+simulation.set_friction_ratio('fire_1', 'fire_1', 0.3)
+simulation.set_friction_ratio('fire_1', 'fire_2', -.3)
+simulation.set_friction_ratio('rock', 'fire_1', .3)
+simulation.set_friction_ratio('rock', 'fire_2', .3)
 const add_line = (c) => {
     const p1 = {
         x: c.ab[0],
@@ -157,75 +160,57 @@ const add_line = (c) => {
 }
 
 
-const aa = 0.75
+const aa = 1
 
-add_line({
-    ab: [-aa, -0.2, -0.1, -0.2],
-    kind: 'rock'
-})
-add_line({
-    ab: [aa, -0.2, 0.1, -0.2],
-    kind: 'rock'
-})
-
-
-add_line({
-    ab: [-0.05, -0.1, -0.1, -0.2],
-    kind: 'rock'
-})
-add_line({
-    ab: [0.05, -0.1, 0.1, -0.2],
-    kind: 'rock'
-})
-
-add_line({
-    ab: [-0.05, -0.1, -0.03, 0.02],
-    kind: 'rock'
-})
-add_line({
-    ab: [0.05, -0.1, 0.03, 0.02],
-    kind: 'rock'
-})
-add_line({
-    ab: [0.02, 0.0, 0.03, 0.02],
-    kind: 'rock'
-})
-add_line({
-    ab: [-0.02, 0.0, -0.03, 0.02],
-    kind: 'rock'
-})
-add_line({
-    ab: [0.02, 0.0, -0.02, 0.0],
-    kind: 'rock'
-})
-add_line({
-    ab: [0.02, 0.0, -0.02, 0.0],
-    kind: 'rock'
-})
-add_line({
-    ab: [0.02, 0.0, -0.02, 0.0],
-    kind: 'rock'
-})
-// add_line({
-//     ab: [0.02, -0.001, -0.01, -0.001],
-//     kind: 'rock'
-// })
-// add_line({
-//     ab: [0.02, -0.002, -0.01, -0.002],
-//     kind: 'rock'
-// })
-// add_line({
-//     ab: [-0.3, -0.1, 0.2, -0.2],
-// })
-// add_line({
-//     ab: [-0.5, -0.3, 0.2, -0.4],
-// })
-// add_line({
-//     ab: [0.5, -0.3, 0.2, -0.4],
-// })
-// add_line({
-//     ab: [-1, -0.6, 1, -0.6],
-// })
+for (let index = 0; index < 2; index++) {
+    add_line({
+        ab: [-aa, -0.2, -0.1, -0.2],
+        kind: 'rock'
+    })
+    add_line({
+        ab: [aa, -0.2, 0.1, -0.2],
+        kind: 'rock'
+    })
+    
+    
+    add_line({
+        ab: [-0.05, -0.1, -0.1, -0.2],
+        kind: 'rock'
+    })
+    add_line({
+        ab: [0.05, -0.1, 0.1, -0.2],
+        kind: 'rock'
+    })
+    
+    add_line({
+        ab: [-0.05, -0.1, -0.03, 0.02],
+        kind: 'rock'
+    })
+    add_line({
+        ab: [0.05, -0.1, 0.03, 0.02],
+        kind: 'rock'
+    })
+    add_line({
+        ab: [0.02, 0.0, 0.03, 0.02],
+        kind: 'rock'
+    })
+    add_line({
+        ab: [-0.02, 0.0, -0.03, 0.02],
+        kind: 'rock'
+    })
+    add_line({
+        ab: [0.02, 0.0, -0.02, 0.0],
+        kind: 'rock'
+    })
+    add_line({
+        ab: [0.02, 0.0, -0.02, 0.0],
+        kind: 'rock'
+    })
+    add_line({
+        ab: [0.02, 0.0, -0.02, 0.0],
+        kind: 'rock'
+    })
+}
 
 const get_kind = () => {
     if (Math.random() > 0.5) {
@@ -234,23 +219,6 @@ const get_kind = () => {
         return 'fire_2'
     }
 }
-
-// setInterval(()=> {
-//     simulation.add_node_js({
-//         x: 0.01 + 0.001 * (Math.random() -0.5),
-//         y: 0.01, 
-//         dx: -0.00,
-//         dy: 0.001,
-//         kind: get_kind(),
-//     })
-//     simulation.add_node_js({
-//         x: -0.01 + 0.001 * (Math.random() -0.5),
-//         y: 0.01, 
-//         dx: -0.00,
-//         dy: 0.001,
-//         kind: get_kind(),
-//     })
-// }, 0)
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">
