@@ -16,11 +16,10 @@ Vellipsis.create = (config) => {
             return add_motor(s, a, b, c)
         }
         s.add_node_js = (x) => {
-            const str_ = JSON.stringify(x)
-            // console.log(str_)
-            // const str_2 = JSON.stringify(x).replaceAll(":0,", ":0.0,")
-            // console.log(str_2)
-            return s.add_node_4(str_)
+            return s.add_node_4(JSON.stringify(x))
+        }
+        s.set_linking_config = (x) => {
+            return s.set_linking_config_(JSON.stringify(x))
         }
         s.links = function* () {
             const nodes_ptr = s.nodes_ptr();

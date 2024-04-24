@@ -55,8 +55,6 @@ const test = async (wasm, Simulation ) => {
     console.log(`link_size: ${link_size}`)
     let n0 = node(nodes_view, 0, node_size);
     let n1 = node(nodes_view, 1, node_size);
-    let l0 = link(links_view, 0, link_size, nodes_view, node_size);
-    let l1 = link(links_view, 1, link_size, nodes_view, node_size);
     assert_equal_triple(n0.p.x, -n1.p.x, 1.0, "p.x")
     assert_equal_triple(n0.p.y, -n1.p.y, 2.0, "p.y")
     assert_equal_triple(n0.pp.x, -n1.pp.x, 3.0, "pp.x")
@@ -79,6 +77,8 @@ const test = async (wasm, Simulation ) => {
     assert_equal(n0.idx, 102, "n0.idx")
     assert_equal(n1.z, 103, "n1.z")
     assert_equal(n1.idx, 104, "n1.idx")
+    let l0 = link(links_view, 0, link_size, nodes_view, node_size);
+    let l1 = link(links_view, 1, link_size, nodes_view, node_size);
     assert_equal_triple(l0.l, -l1.l, 0.1, "l.l")
     assert_equal_triple(l0.s, -l1.s, 0.2, "l.s")
     assert_equal_triple(l0.damping, -l1.damping, 0.3, "l.damping")
@@ -95,7 +95,6 @@ const test = async (wasm, Simulation ) => {
     }
     for (const l of s.links()) {
         if (l.active === 0 || l.active === 1) {
-
         } else {
             console.error("invalid active")
         }

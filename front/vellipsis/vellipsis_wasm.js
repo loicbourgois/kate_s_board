@@ -277,16 +277,12 @@ export class Simulation {
         wasm.simulation_add_kind(this.__wbg_ptr, ptr0, len0);
     }
     /**
-    * @param {string} kind_1
-    * @param {string} kind_2
-    * @param {number} value
+    * @param {string} str_
     */
-    set_friction_ratio(kind_1, kind_2, value) {
-        const ptr0 = passStringToWasm0(kind_1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    set_linking_config_(str_) {
+        const ptr0 = passStringToWasm0(str_, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(kind_2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        wasm.simulation_set_friction_ratio(this.__wbg_ptr, ptr0, len0, ptr1, len1, value);
+        wasm.simulation_set_linking_config_(this.__wbg_ptr, ptr0, len0);
     }
     /**
     * @param {number} entity_id
@@ -464,15 +460,15 @@ export class Simulation {
     /**
     * @param {number} a
     * @param {number} b
-    * @param {number} l
-    * @param {number} s
+    * @param {number} length
+    * @param {number} strength
     * @param {number} damping
     * @returns {number | undefined}
     */
-    add_link(a, b, l, s, damping) {
+    add_link(a, b, length, strength, damping) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.simulation_add_link(retptr, this.__wbg_ptr, a, b, l, s, damping);
+            wasm.simulation_add_link(retptr, this.__wbg_ptr, a, b, length, strength, damping);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             return r0 === 0 ? undefined : r1 >>> 0;

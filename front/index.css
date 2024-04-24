@@ -5,6 +5,7 @@
     font-family: monospace; 
     border: 0px #0000;
     color: #ddd;
+    text-decoration: none;
 }
 body {
     overflow: hidden;
@@ -15,6 +16,18 @@ body {
 }
 p {
   white-space:pre;
+}
+#links {
+  display: flex;
+  flex-direction: column;
+  margin-top: 2rem;
+}
+#links a {
+  margin-left: 3rem;
+  margin-top: 0.5rem;
+}
+#links a:hover {
+  color: #ff0;
 }
 #right {
     position: absolute;

@@ -54,7 +54,12 @@ const tick = (simulation, graphics) => {
     })
 }
 const colors = ["#525657", "#ff4", "#F44"]
+const render_times = []
 const render = (simulation, graphics) => {
+    render_times.push(performance.now())
+    while (render_times.length > 100) {
+        render_times.shift()
+    }
     graphics.clear_partial()
     for (const n of simulation.nodes()) {
         if ( n.active!==1 ) {
@@ -63,35 +68,17 @@ const render = (simulation, graphics) => {
         if (isNaN(n.p.x)) {
             simulation.delete_node(n.idx)
             console.error(n)
-            // throw "isNaN(p.n.x)"
         }
         if (n.p.y < -0.5) {
             simulation.delete_node(n.idx)
         }
         graphics.fill_circle(n.p, simulation.diameter*1.5, colors[n.kind])
     }
-    for (const l of simulation.links()) {
-        if ( l.active!==1 ) {
-            continue
-        }
-        const limit = 0.4
-        let aa = l.stress / limit
-        let r = 1
-        let g = 1
-        if (aa > 0.5) {
-            g = (1-aa) * 2
-        }
-        r = parseInt(r*255)
-        g = parseInt(g*255)
-        let b = parseInt(0)
-        if (l.stress > limit ) {
-            simulation.delete_link(l.idx, l.uid)
-        }
-    }
     document.getElementById("nodes_count").innerHTML = simulation.nodes_count()
     document.getElementById("links_count").innerHTML = simulation.links_count()
     document.getElementById("links_inactive_count").innerHTML = simulation.links_inactive_count()
     document.getElementById("nodes_inactive_count").innerHTML = simulation.nodes_inactive_count()
+    document.getElementById("fps").innerHTML = (1/((render_times[render_times.length-1] - render_times[0])/(render_times.length-1)/1000)).toFixed(0)
 }
 const data = {
     mouse: {},
@@ -106,18 +93,53 @@ const simulation = await Vellipsis.create({
     diameter: 0.01,
     gravity: 0.00001,
     central_gravity: 0.0,
-    ticker: 1,
+    ticker: 2,
     friction_ratio: 0.0,
     max_speed: 0.001,
 })
 simulation.add_kind('rock')
 simulation.add_kind('fire_1')
 simulation.add_kind('fire_2')
-simulation.set_friction_ratio('fire_2', 'fire_2', 0.3)
-simulation.set_friction_ratio('fire_1', 'fire_1', 0.3)
-simulation.set_friction_ratio('fire_1', 'fire_2', -.3)
-simulation.set_friction_ratio('rock', 'fire_1', .3)
-simulation.set_friction_ratio('rock', 'fire_2', .3)
+simulation.set_linking_config({
+    kind_1: 'fire_2',
+    kind_2: 'fire_2',
+    strength: 0.3,
+    stress_limit: 0.4,
+    damping: 1.0,
+    length: simulation.diameter,
+})
+simulation.set_linking_config({
+    kind_1: 'fire_1',
+    kind_2: 'fire_1',
+    strength: 0.3,
+    stress_limit: 0.4,
+    damping: 1.0,
+    length: simulation.diameter,
+})
+simulation.set_linking_config({
+    kind_1: 'fire_1',
+    kind_2: 'fire_2',
+    strength: -0.3,
+    stress_limit: 0.4,
+    damping: 1.0,
+    length: simulation.diameter,
+})
+simulation.set_linking_config({
+    kind_1: 'rock',
+    kind_2: 'fire_1',
+    strength: 0.3,
+    stress_limit: 0.4,
+    damping: 1.0,
+    length: simulation.diameter,
+})
+simulation.set_linking_config({
+    kind_1: 'rock',
+    kind_2: 'fire_2',
+    strength: 0.3,
+    stress_limit: 0.4,
+    damping: 1.0,
+    length: simulation.diameter,
+})
 const add_line = (c) => {
     const p1 = {
         x: c.ab[0],
@@ -228,6 +250,7 @@ document.body.innerHTML = `
             <p>y2: <span id="y2"></span></p>
             <p>physics:  <span id="physic"></span></p>
             <p>graphics: <span id="graphics"></span></p>
+            <p>fps:      <span id="fps"></span></p>
             <p>nodes: <span id="nodes_count"></span></p>
             <p>inactive nodes: <span id="nodes_inactive_count"></span></p>
             <p>links: <span id="links_count"></span></p>

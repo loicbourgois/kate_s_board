@@ -9,10 +9,12 @@ const link = (link_view, idx, link_size, node_view, node_size) => {
         s: link_view.getFloat64(i+8, true),
         damping: link_view.getFloat64(i+8*2, true),
         stress: link_view.getFloat64(i+8*3, true),
-        a: node(node_view, link_view.getUint32(i+8*4, true), node_size),
-        b: node(node_view, link_view.getUint32(i+8*4+4, true), node_size),
-        uid: link_view.getUint32(i+8*5, true),
-        active: link_view.getUint8(i+8*5+4, true),
+        stress_limit: link_view.getFloat64(i+8*4, true),
+        a: node(node_view, link_view.getUint32(i+8*5, true), node_size),
+        b: node(node_view, link_view.getUint32(i+8*5+4, true), node_size),
+        uid: link_view.getUint32(i+8*6, true),
+        idx: link_view.getUint32(i+8*6+4, true),
+        active: link_view.getUint8(i+8*7, true),
     }
 }
 

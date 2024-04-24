@@ -3,15 +3,7 @@ set -e
 full_path=$HOME/github.com/loicbourgois/vellipsis
 full_path=$full_path \
   docker-compose --file $full_path/docker-compose.yml down
-cargo fmt \
-    --manifest-path $HOME/github.com/loicbourgois/vellipsis/engine/Cargo.toml
-# cargo run \
-#     --release \
-#     --manifest-path $HOME/github.com/loicbourgois/vellipsis/engine/Cargo.toml
-cd $HOME/github.com/loicbourgois/vellipsis/wasm-engine
-wasm-pack build --release --target web --no-typescript --no-pack
-cp $HOME/github.com/loicbourgois/vellipsis/wasm-engine/pkg/vellipsis_wasm* \
-    $HOME/github.com/loicbourgois/vellipsis/front/vellipsis
+$HOME/github.com/loicbourgois/vellipsis/build.sh
 echo "################################"
 echo "# Frontend at http://localhost #"
 echo "################################"

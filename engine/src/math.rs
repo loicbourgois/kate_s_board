@@ -1,5 +1,5 @@
 use crate::node::Node;
-use crate::Vector;
+use crate::vector::Vector;
 
 pub fn delta(a: &Vector, b: &Vector) -> Vector {
     Vector {
@@ -92,5 +92,12 @@ pub fn rotate(p1: Vector, p2: Vector, angle: f64) -> Vector {
     return Vector {
         x: p2.x + dx * cos_ - dy * sin_,
         y: p2.y + dy * cos_ + dx * sin_,
+    };
+}
+
+pub fn lerp(a: Vector, b: Vector, t: f64) -> Vector {
+    return Vector {
+        x: (a.x * (1.0 - t) + b.x * t),
+        y: (a.y * (1.0 - t) + b.y * t),
     };
 }
