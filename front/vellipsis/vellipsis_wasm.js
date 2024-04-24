@@ -463,6 +463,26 @@ export class Simulation {
     * @param {number} length
     * @param {number} strength
     * @param {number} damping
+    * @param {number} stress_limit
+    * @returns {number | undefined}
+    */
+    add_link_2(a, b, length, strength, damping, stress_limit) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.simulation_add_link_2(retptr, this.__wbg_ptr, a, b, length, strength, damping, stress_limit);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            return r0 === 0 ? undefined : r1 >>> 0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * @param {number} a
+    * @param {number} b
+    * @param {number} length
+    * @param {number} strength
+    * @param {number} damping
     * @returns {number | undefined}
     */
     add_link(a, b, length, strength, damping) {

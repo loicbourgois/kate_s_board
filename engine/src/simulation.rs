@@ -429,12 +429,16 @@ impl Simulation {
                     None => {}
                 };
                 // friction 2
-                let delta_position = delta(&n1.p, &n2.p);
                 let delta_velocity = delta(&n1.v, &n2.v);
                 let ab = Vector {
                     x: delta_position.y,
                     y: -delta_position.x,
                 };
+                let ac = delta_velocity;
+                let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
+                let dx = ab.x * coeff;
+                let dy = ab.y * coeff;
+                let fr = self.friction_ratio;
                 let ac = delta_velocity;
                 let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
                 let dx = ab.x * coeff;
@@ -479,7 +483,7 @@ impl Simulation {
             }
         }
         for idx in links_to_delete {
-            // self.delete_link_2(idx);
+            self.delete_link_2(idx);
         }
         // clinks
         unsafe {
@@ -739,13 +743,14 @@ impl Simulation {
         self.uid_counter
     }
 
-    pub fn add_link(
+    pub fn add_link_2(
         &mut self,
         a: usize,
         b: usize,
         length: f64,
         strength: f64,
         damping: f64,
+        stress_limit: f64,
     ) -> Option<usize> {
         match self.linked.get(&a) {
             Some(x) => match x.get(&b) {
@@ -776,7 +781,7 @@ impl Simulation {
             stress: 0.0,
             uid,
             active: 1,
-            stress_limit: 0.4,
+            stress_limit,
         };
         match aa {
             Some(idx_) => {
@@ -797,6 +802,17 @@ impl Simulation {
             self.linked.get_mut(&i1).unwrap().insert(i2, idx);
         }
         Some(idx)
+    }
+
+    pub fn add_link(
+        &mut self,
+        a: usize,
+        b: usize,
+        length: f64,
+        strength: f64,
+        damping: f64,
+    ) -> Option<usize> {
+        self.add_link_2(a, b, length, strength, damping, 0.4)
     }
 
     pub fn delete_link(&mut self, idx: usize, uid: usize) {

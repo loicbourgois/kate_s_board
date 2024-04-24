@@ -40,9 +40,9 @@ const make_circle = (c, s, center) => {
             turbo_max_speed: 0.0,
             fixed: false,
         })))
-        s.add_link(ids[index-1], ids[index], base_length, link_strength, link_damping)
+        s.add_link_2(ids[index-1], ids[index], base_length, link_strength, link_damping, 1000000.0)
     }
-    s.add_link(ids[c-1], ids[0], base_length, link_strength, link_damping)
+    s.add_link_2(ids[c-1], ids[0], base_length, link_strength, link_damping, 1000000.0)
 }
 const update_mouse = (graphics, simulation) => {
     return (a) => {
