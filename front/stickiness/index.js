@@ -45,24 +45,24 @@ const render = (simulation, graphics) => {
     for (const n of simulation.nodes()) {
         graphics.fill_circle(n.p, simulation.diameter*1.5, colors[n.kind])
     }
-    for (const l of simulation.links()) {
-        if (! (l.active==1) ) {
-            continue
-        }
-        const limit = 0.4
-        let aa = l.stress / limit
-        let r = 1
-        let g = 1
-        if (aa > 0.5) {
-            g = (1-aa) * 2
-        }
-        r = parseInt(r*255)
-        g = parseInt(g*255)
-        let b = parseInt(0)
-        if (l.stress > limit ) {
-            simulation.delete_link(l.idx, l.uid)
-        }
-    }
+    // for (const l of simulation.links()) {
+    //     if (! (l.active==1) ) {
+    //         continue
+    //     }
+    //     const limit = 0.4
+    //     let aa = l.stress / limit
+    //     let r = 1
+    //     let g = 1
+    //     if (aa > 0.5) {
+    //         g = (1-aa) * 2
+    //     }
+    //     r = parseInt(r*255)
+    //     g = parseInt(g*255)
+    //     let b = parseInt(0)
+    //     if (l.stress > limit ) {
+    //         simulation.delete_link(l.idx, l.uid)
+    //     }
+    // }
     document.getElementById("nodes_count").innerHTML = simulation.nodes_count()
     document.getElementById("links_count").innerHTML = simulation.links_count()
     document.getElementById("links_inactive_count").innerHTML = simulation.links_inactive_count()
@@ -87,8 +87,22 @@ const simulation = await Vellipsis.create({
 simulation.add_kind('default')
 simulation.add_kind('glue')
 simulation.add_kind('wall')
-simulation.set_friction_ratio('glue', 'wall', 2.3)
-simulation.set_friction_ratio('glue', 'glue', 2.2)
+simulation.set_linking_config({
+    kind_1: 'glue',
+    kind_2: 'wall',
+    strength: 40.3,
+    stress_limit: 1.,
+    damping: 1.0,
+    length: simulation.diameter,
+})
+simulation.set_linking_config({
+    kind_1: 'glue',
+    kind_2: 'glue',
+    strength: 2.,
+    stress_limit: 1.,
+    damping: 1.0,
+    length: simulation.diameter,
+})
 
 
 const add_line = (c) => {
@@ -137,33 +151,9 @@ add_line({
 add_line({
     ab: [-0.3, -0.1, 0.2, -0.2],
 })
-// add_line({
-//     ab: [-0.5, -0.3, 0.2, -0.4],
-// })
-// add_line({
-//     ab: [0.5, -0.3, 0.2, -0.4],
-// })
 add_line({
     ab: [-1, -0.6, 1, -0.6],
 })
-
-
-
-// for (let y = -0.25; y < 0.4; y+=simulation.diameter) {
-//     simulation.add_node_js({
-//         x: -0.2,
-//         y: y,
-//         kind: 'wall',
-//         fixed: true,
-//     })
-//     simulation.add_node_js({
-//         y: -0.2,
-//         x: y,
-//         kind: 'wall',
-//         fixed: true,
-//     })
-    
-// }
 setInterval(()=> {
     simulation.add_node_js({
         x: 0.2,

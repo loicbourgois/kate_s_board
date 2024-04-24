@@ -424,7 +424,7 @@ impl Simulation {
                 // friction
                 match self.linking.get(&(n1.kind, n2.kind)) {
                     Some(lc) => {
-                        self.add_link(n1.idx, n2.idx, self.diameter, lc.strength, lc.damping);
+                        self.add_link_2(n1.idx, n2.idx, self.diameter, lc.strength, lc.damping, lc.stress_limit);
                     }
                     None => {}
                 };
