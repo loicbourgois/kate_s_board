@@ -388,7 +388,7 @@ impl Simulation {
                 let crdv = if !n1.fixed && !n2.fixed {
                     self.crdv
                 } else {
-                    self.crdv * 2.0
+                    self.crdv //* 2.0
                 };
                 let dd = dist - self.diameter;
                 let dd_crdv = dd * crdv;
@@ -424,7 +424,14 @@ impl Simulation {
                 // friction
                 match self.linking.get(&(n1.kind, n2.kind)) {
                     Some(lc) => {
-                        self.add_link_2(n1.idx, n2.idx, self.diameter, lc.strength, lc.damping, lc.stress_limit);
+                        self.add_link_2(
+                            n1.idx,
+                            n2.idx,
+                            self.diameter,
+                            lc.strength,
+                            lc.damping,
+                            lc.stress_limit,
+                        );
                     }
                     None => {}
                 };

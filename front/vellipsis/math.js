@@ -11,7 +11,9 @@ const rotate = (p1, p2, angle) => {
       y: p2.y + dy * cos_ + dx * sin_,
     }
 }
-
+const norm = (v) => {
+    return Math.sqrt(v.x * v.x + v.y * v.y)
+}
 
 
 const delta = (a, b) => {
@@ -203,4 +205,5 @@ export {
     find_angle,
     normalize,
     crossing_segments,
+    norm,
 }
