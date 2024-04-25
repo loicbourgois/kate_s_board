@@ -21,8 +21,22 @@ const update_mouse = (graphics, simulation) => {
         simulation.set_mouse(data.mouse.p.x, data.mouse.p.y)
     }
 }
+const get_kind = () => {
+    if (Math.random() > 0.5) {
+        return 'fire_1'
+    }  else {
+        return 'fire_2'
+    }
+}
 const tick = (simulation, graphics) => {
     const start = performance.now()
+    if (data.add_node) {
+        simulation.add_node_js({
+            x: data.mouse.p.x + Math.random() * simulation.diameter - simulation.diameter*0.5,
+            y: data.mouse.p.y + Math.random() * simulation.diameter - simulation.diameter*0.5,
+            kind: get_kind(),
+        })
+    }
     simulation.tick()
     document.getElementById("physic").innerHTML = get_elapsed_formatted(start)
     const render_start = performance.now()
@@ -32,7 +46,7 @@ const tick = (simulation, graphics) => {
         tick(simulation, graphics)
     })
 }
-const colors = ["#add2", "#4ff8", "#F448"]
+const colors = ["#1110", "#4ff8", "#F448"]
 const render_times = []
 const render = (simulation, graphics) => {
     render_times.push(performance.now())
@@ -63,20 +77,20 @@ const data = {
     previous_state: null,
 }
 const simulation = await Vellipsis.create({
-    crdv: 50.0,
-    crdp: 0.007,
+    crdv: 90.0,
+    crdp: 0.001,
     crdv2: 0.0,
     crdp2: 0.0,
     diameter: 0.01,
-    gravity: 0.000005,
+    gravity: 0.00005,
     central_gravity: 0.0,
-    ticker: 3,
+    ticker: 1,
     friction_ratio: 0.0,
     max_speed: 0.005,
 })
-simulation.add_kind('rock')
-simulation.add_kind('fire_1')
-simulation.add_kind('fire_2')
+simulation.add_kind('rock', 1.0)
+simulation.add_kind('fire_1', 1.0)
+simulation.add_kind('fire_2', 0.5)
 const add_static_line = (kind, a, b, c, d) => {
     const p1 = {
         x: a,
@@ -119,13 +133,14 @@ const add_static_line = (kind, a, b, c, d) => {
 }
 const add_stack = (c) => {
     const width = c.width
-    for (let index = 0; index < 4; index++) {
+    for (let index = 0; index < 10; index++) {
         add_static_line('rock', -width/2+c.x, -0.2, width/2+c.x, -0.2)
-        add_static_line('rock', -width/2+c.x, -0.2, -width/2+c.x, 0.32)
-        add_static_line('rock', width/2+c.x, -0.2, width/2+c.x, 0.32)
+        add_static_line('rock', -width/2+c.x, 0.42, width/2+c.x, 0.42)
+        add_static_line('rock', -width/2+c.x, -0.2, -width/2+c.x, 0.42)
+        add_static_line('rock', width/2+c.x, -0.2, width/2+c.x, 0.42)
     }
-    for (let x = -c.width/2 + simulation.diameter; x < c.width / 2 ; x+=simulation.diameter) {
-        for (let y = 0; y < c.height-0.001; y+=simulation.diameter) {
+    for (let x = -c.width/2 + simulation.diameter; x < c.width / 2 * 0.99 ; x+=simulation.diameter*0.7) {
+        for (let y = 0; y < c.height-0.001; y+=simulation.diameter*0.75) {
             simulation.add_node_js({
                 x: c.x+Math.random()*0.001+x,
                 y: y-0.19,
@@ -142,8 +157,8 @@ const add_stack = (c) => {
     }
 }
 add_stack({
-    width: 0.75,
-    height: 0.2,
+    width: 1.,
+    height: 0.3,
     x: 0,
 })
 document.body.innerHTML = `

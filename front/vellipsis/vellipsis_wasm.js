@@ -270,11 +270,12 @@ export class Simulation {
     }
     /**
     * @param {string} kind
+    * @param {number} mass
     */
-    add_kind(kind) {
+    add_kind(kind, mass) {
         const ptr0 = passStringToWasm0(kind, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        wasm.simulation_add_kind(this.__wbg_ptr, ptr0, len0);
+        wasm.simulation_add_kind(this.__wbg_ptr, ptr0, len0, mass);
     }
     /**
     * @param {string} str_

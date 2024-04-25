@@ -120,6 +120,7 @@ const m3 = simulation.add_motor(w3, w2.cidx, 0.75)
 for (let index = 0; index < 400; index++) {
     simulation.add_node(Math.random()*0.2 - 0.15, Math.random()*0.2 + 0.25, false)
 }
+simulation.add_kind('default', 1)
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">

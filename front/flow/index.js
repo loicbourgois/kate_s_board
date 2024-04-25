@@ -1,4 +1,3 @@
-
 import { Vellipsis } from "../vellipsis/vellipsis.js";
 import { Graphics } from "../vellipsis/graphics.js"
 import { get_elapsed_formatted } from "../vellipsis/utils.js"
@@ -21,29 +20,15 @@ const update_mouse = (graphics, simulation) => {
         simulation.set_mouse(data.mouse.p.x, data.mouse.p.y)
     }
 }
+const get_kind = () => {
+    if (Math.random() > 0.5) {
+        return 'fire_1'
+    }  else {
+        return 'fire_2'
+    }
+}
 const tick = (simulation, graphics) => {
     const start = performance.now()
-    if (data.add_node) {
-        simulation.add_node_js({
-            x: data.mouse.p.x + Math.random() * simulation.diameter - simulation.diameter*0.5,
-            y: data.mouse.p.y + Math.random() * simulation.diameter - simulation.diameter*0.5,
-            kind: get_kind(),
-        })
-    }
-    simulation.add_node_js({
-        x: 0.01 + 0.001 * (Math.random() -0.5),
-        y: 0.01, 
-        dx: -0.00,
-        dy: 0.001,
-        kind: get_kind(),
-    })
-    simulation.add_node_js({
-        x: -0.01 + 0.001 * (Math.random() -0.5),
-        y: 0.01, 
-        dx: -0.00,
-        dy: 0.001,
-        kind: get_kind(),
-    })
     simulation.tick()
     document.getElementById("physic").innerHTML = get_elapsed_formatted(start)
     const render_start = performance.now()
@@ -53,7 +38,28 @@ const tick = (simulation, graphics) => {
         tick(simulation, graphics)
     })
 }
-const colors = ["#525657", "#ff4", "#F44"]
+const config = [
+    {
+        kind: 'rock',
+        color: '#422',
+        density: 1.0,
+    },
+    {
+        kind: 'water',
+        color: '#4ff8',
+        density: 1.0,
+    }
+]
+const reservoir = {
+    p1: {
+        x: -0.29,
+        y: 0.01,
+    },
+    p2: {
+        x: -0.2,
+        y: 0.19,
+    }
+}
 const render_times = []
 const render = (simulation, graphics) => {
     render_times.push(performance.now())
@@ -69,10 +75,19 @@ const render = (simulation, graphics) => {
             simulation.delete_node(n.idx)
             console.error(n)
         }
-        if (n.p.y < -0.5) {
+        if (n.p.y < -0.4) {
             simulation.delete_node(n.idx)
+            const x = Math.random() * Math.abs(reservoir.p1.x - reservoir.p2.x)*0.9 +  Math.min(reservoir.p1.x, reservoir.p2.x)
+            const y = Math.random() * Math.abs(reservoir.p1.y - reservoir.p2.y)*0.9 +  Math.min(reservoir.p1.y, reservoir.p2.y)
+            simulation.add_node_js({
+                x: x,
+                y: y,
+                kind: 'water',
+                fixed: false,
+            })
         }
-        graphics.fill_circle(n.p, simulation.diameter*1.5, colors[n.kind])
+        let color = config[n.kind].color
+        graphics.fill_circle(n.p2, simulation.diameter*1.5, color)
     }
     document.getElementById("nodes_count").innerHTML = simulation.nodes_count()
     document.getElementById("links_count").innerHTML = simulation.links_count()
@@ -86,75 +101,29 @@ const data = {
     previous_state: null,
 }
 const simulation = await Vellipsis.create({
-    crdv: 10.0,
-    crdp: 0.2,
+    crdv: 20.0,
+    crdp: 0.01,
     crdv2: 0.0,
     crdp2: 0.0,
     diameter: 0.01,
-    gravity: 0.00001,
+    gravity: 0.00005,
     central_gravity: 0.0,
-    ticker: 2,
+    ticker: 1,
     friction_ratio: 0.0,
-    max_speed: 0.001,
+    max_speed: 0.05,
 })
-simulation.add_kind('rock', 1)
-simulation.add_kind('fire_1', 1)
-simulation.add_kind('fire_2', 1)
-simulation.set_linking_config({
-    kind_1: 'fire_2',
-    kind_2: 'fire_2',
-    strength: 0.3,
-    stress_limit: 0.4,
-    damping: 1.0,
-    length: simulation.diameter,
-})
-simulation.set_linking_config({
-    kind_1: 'fire_1',
-    kind_2: 'fire_1',
-    strength: 0.3,
-    stress_limit: 0.4,
-    damping: 1.0,
-    length: simulation.diameter,
-})
-simulation.set_linking_config({
-    kind_1: 'fire_1',
-    kind_2: 'fire_2',
-    strength: -0.3,
-    stress_limit: 0.4,
-    damping: 1.0,
-    length: simulation.diameter,
-})
-simulation.set_linking_config({
-    kind_1: 'rock',
-    kind_2: 'fire_1',
-    strength: 0.3,
-    stress_limit: 0.4,
-    damping: 1.0,
-    length: simulation.diameter,
-})
-simulation.set_linking_config({
-    kind_1: 'rock',
-    kind_2: 'fire_2',
-    strength: 0.3,
-    stress_limit: 0.4,
-    damping: 1.0,
-    length: simulation.diameter,
-})
-const add_line = (c) => {
-    const p1 = {
-        x: c.ab[0],
-        y: c.ab[1],
-    }
-    const p2 = {
-        x: c.ab[2],
-        y: c.ab[3],
-    }
+for (const x of config) {
+    simulation.add_kind(x.kind, x.density)
+}
+const add_static_line = (c) => {
+    const p1 = c.p1
+    const p2 = c.p2
     const delt = delta(p1, p2)
     const dist = distance(p1, p2)
     const n = normalize(delt)
     const v = {
-        x: n.x * simulation.diameter,
-        y: n.y * simulation.diameter,
+        x: n.x * simulation.diameter * c.ratio,
+        y: n.y * simulation.diameter * c.ratio,
     }
     simulation.add_node_js({
         x: p1.x, 
@@ -172,7 +141,7 @@ const add_line = (c) => {
             break
         }
         simulation.add_node_js({
-            x: p3.x, 
+            x: p3.x,
             y: p3.y,
             kind: c.kind,
             fixed: true,
@@ -180,67 +149,119 @@ const add_line = (c) => {
         i++
     }
 }
-
-
-const aa = 1
-
-for (let index = 0; index < 2; index++) {
-    add_line({
-        ab: [-aa, -0.2, -0.1, -0.2],
-        kind: 'rock'
-    })
-    add_line({
-        ab: [aa, -0.2, 0.1, -0.2],
-        kind: 'rock'
-    })
-    
-    
-    add_line({
-        ab: [-0.05, -0.1, -0.1, -0.2],
-        kind: 'rock'
-    })
-    add_line({
-        ab: [0.05, -0.1, 0.1, -0.2],
-        kind: 'rock'
-    })
-    
-    add_line({
-        ab: [-0.05, -0.1, -0.03, 0.02],
-        kind: 'rock'
-    })
-    add_line({
-        ab: [0.05, -0.1, 0.03, 0.02],
-        kind: 'rock'
-    })
-    add_line({
-        ab: [0.02, 0.0, 0.03, 0.02],
-        kind: 'rock'
-    })
-    add_line({
-        ab: [-0.02, 0.0, -0.03, 0.02],
-        kind: 'rock'
-    })
-    add_line({
-        ab: [0.02, 0.0, -0.02, 0.0],
-        kind: 'rock'
-    })
-    add_line({
-        ab: [0.02, 0.0, -0.02, 0.0],
-        kind: 'rock'
-    })
-    add_line({
-        ab: [0.02, 0.0, -0.02, 0.0],
-        kind: 'rock'
-    })
-}
-
-const get_kind = () => {
-    if (Math.random() > 0.5) {
-        return 'fire_1'
-    }  else {
-        return 'fire_2'
+const add_rect = (c) => {
+    const xmin = Math.min(c.p1.x, c.p2.x)
+    const xmax = Math.max(c.p1.x, c.p2.x)
+    const ymin = Math.min(c.p1.y, c.p2.y)
+    const ymax = Math.max(c.p1.y, c.p2.y)
+    for (let x = xmin; x < xmax; x+=simulation.diameter*c.ratio) {
+        for (let y = ymin; y < ymax; y+=simulation.diameter*c.ratio) {
+            simulation.add_node_js({
+                x: x,
+                y: y,
+                kind: c.kind,
+                fixed: false,
+            })
+        }
     }
 }
+const ratio_line = 0.1
+add_static_line({
+    kind: 'rock',
+    ratio: ratio_line,
+    p1: {
+        x: -0.3,
+        y: 0.2,
+    },
+    p2: {
+        x: -0.3,
+        y: 0.0,
+    }
+})
+add_static_line({
+    kind: 'rock',
+    ratio: ratio_line,
+    p1: {
+        x: -0.3,
+        y: 0.2,
+    },
+    p2: {
+        x: -0.2,
+        y: 0.2,
+    }
+})
+add_static_line({
+    kind: 'rock',
+    ratio: ratio_line,
+    p1: {
+        x: -0.2,
+        y: 0.2,
+    },
+    p2: {
+        x: -0.2,
+        y: 0.0,
+    }
+})
+add_static_line({
+    kind: 'rock',
+    ratio: ratio_line,
+    p1: {
+        x: -0.3,
+        y: 0.,
+    },
+    p2: {
+        x: -0.15,
+        y: -0.15,
+    }
+})
+add_static_line({
+    kind: 'rock',
+    ratio: ratio_line,
+    p1: {
+        x: -0.2,
+        y: 0.,
+    },
+    p2: {
+        x: -0.15,
+        y: -0.1,
+    }
+})
+add_static_line({
+    kind: 'rock',
+    ratio: ratio_line,
+    p1: {
+        x: -0.,
+        y: -0.1,
+    },
+    p2: {
+        x: -0.15,
+        y: -0.15,
+    }
+})
+add_static_line({
+    kind: 'rock',
+    ratio: ratio_line,
+    p1: {
+        x: -0.15,
+        y: -0.1,
+    },
+    p2: {
+        x: -0.,
+        y: -0.05,
+    }
+})
+add_rect({
+    kind: 'water',
+    ratio: 0.4,
+    p1: {
+        x: -0.29,
+        y: 0.01,
+    },
+    p2: {
+        x: -0.2,
+        y: 0.19,
+    }
+})
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">
@@ -262,7 +283,7 @@ document.body.innerHTML = `
 const graphics = new Graphics("canvas")
 document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
 graphics.resize_canvas()
-graphics.draw_zoom = 1.2
+graphics.draw_zoom = 1.
 graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
 graphics.context.canvas.addEventListener('mousedown', () => {
     data.add_node = true

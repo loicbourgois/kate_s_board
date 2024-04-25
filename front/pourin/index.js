@@ -74,8 +74,8 @@ const simulation = await Vellipsis.create({
     friction_ratio: 0.0,
     max_speed: 0.005,
 })
-simulation.add_kind('rock')
-simulation.add_kind('fire_1')
+simulation.add_kind('rock', 1.0)
+simulation.add_kind('fire_1', 1.0)
 const add_static_line = (kind, a, b, c, d) => {
     const p1 = {
         x: a,
@@ -138,47 +138,11 @@ const add_stack = (c) => {
         fixed: true,
     })
 }
-
-// add_stack({
-//     width: 0.02,
-//     height: 0.1,
-//     x: -0.1,
-// })
-// add_stack({
-//     width: 0.02,
-//     height: 0.2,
-//     x: -0.05,
-// })
-// add_stack({
-//     width: 0.02,
-//     height: 0.3,
-//     x: 0.0,
-// })
-// add_stack({
-//     width: 0.02,
-//     height: 0.4,
-//     x: 0.05,
-// })
-// add_stack({
-//     width: 0.02,
-//     height: 0.5,
-//     x: 0.1,
-// })
-
 add_stack({
     width: 0.17,
     height: 9.0,
     x: 0,
 })
-
-// simulation.add_node_js({
-//     x: 0.2,
-//     y: 0.2,
-//     kind: 'fire_1',
-//     fixed: false,
-// })
-
-
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">

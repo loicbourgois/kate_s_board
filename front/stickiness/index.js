@@ -84,9 +84,9 @@ const simulation = await Vellipsis.create({
     friction_ratio: 0.0,
     max_speed: 0.001,
 })
-simulation.add_kind('default')
-simulation.add_kind('glue')
-simulation.add_kind('wall')
+simulation.add_kind('default', 1)
+simulation.add_kind('glue', 1)
+simulation.add_kind('wall', 1)
 simulation.set_linking_config({
     kind_1: 'glue',
     kind_2: 'wall',

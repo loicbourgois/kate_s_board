@@ -57,6 +57,17 @@ class Graphics {
         context.fillStyle = color;
         context.fill();
     }
+    text (p, txt) {
+        const context = this.context
+        context.font = "12px Arial";
+        const cc = this.context_coordinates(p)
+        context.fillStyle = "#eee";
+        context.fillText(txt, cc.x, cc.y); 
+        context.font = "11px Arial";
+        // const cc = context_coordinates(context, p)
+        // context.fillStyle = "#222";
+        // context.fillText(txt, cc.x, cc.y); 
+    }
 }
 
 

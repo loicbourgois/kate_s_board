@@ -136,6 +136,7 @@ const simulation = await Vellipsis.create({
     friction_ratio: 0.3,
     max_speed: 0.001,
 })
+simulation.add_kind('default', 1.0)
 document.body.innerHTML = `
     <div id="left">
         <div id="hidden_infos">

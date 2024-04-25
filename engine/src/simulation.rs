@@ -14,6 +14,7 @@ use crate::math::lerp;
 use crate::math::norm;
 use crate::math::normalize_2;
 use crate::math::rotate;
+use crate::node::Kind;
 use crate::node::Node;
 use crate::node::NodeConfig;
 use crate::node::NodeConfig2;
@@ -55,8 +56,8 @@ pub struct Simulation {
     linked: HashMap<usize, HashMap<usize, usize>>,
     entities: Vec<Entity>,
     uid_counter: usize,
-    kinds: HashMap<String, usize>,
-    kinds_vec: Vec<String>,
+    kinds: HashMap<String, Kind>,
+    kinds_vec: Vec<Kind>,
     linking: HashMap<(usize, usize), LinkConfig>,
     friction_ratio: f64,
 }
@@ -132,15 +133,19 @@ impl Simulation {
         entity_id
     }
 
-    pub fn add_kind(&mut self, kind: String) {
-        self.kinds.insert(kind.clone(), self.kinds_vec.len());
-        self.kinds_vec.push(kind);
+    pub fn add_kind(&mut self, kind: String, mass: f64) {
+        let k = Kind {
+            id: self.kinds_vec.len(),
+            mass,
+        };
+        self.kinds.insert(kind.clone(), k.clone());
+        self.kinds_vec.push(k);
     }
 
     pub fn set_linking_config_(&mut self, str_: String) {
         let config: LinkConfig = serde_json::from_str(&str_).unwrap();
-        let a = self.kinds[&config.kind_1];
-        let b = self.kinds[&config.kind_2];
+        let a = self.kinds[&config.kind_1].id;
+        let b = self.kinds[&config.kind_2].id;
         self.linking.insert((a, b), config.clone());
         self.linking.insert((b, a), config);
     }
@@ -305,7 +310,7 @@ impl Simulation {
             }
             n.dv.x += n.p.x - n.pp.x;
             n.dv.y += n.p.y - n.pp.y;
-            n.dv.y -= self.gravity;
+            n.dv.y -= self.gravity * self.kinds_vec[n.kind].mass;
             let cg = normalize_2(n.p);
             n.dv.x += cg.x * self.central_gravity;
             n.dv.y += cg.y * self.central_gravity;
@@ -327,10 +332,15 @@ impl Simulation {
                         for idx2 in hset.keys() {
                             let n2 = &nodes_2[*idx2];
                             let d = delta(&n2.p, &n.p);
-                            direction.x += d.x;
-                            direction.y += d.y;
+                            if d.x.is_finite() && d.y.is_finite() {
+                                direction.x += d.x;
+                                direction.y += d.y;
+                            }
                         }
-                        n.direction = normalize_2(direction);
+                        let nd = normalize_2(direction);
+                        if nd.x.is_finite() && nd.y.is_finite() {
+                            n.direction = nd;
+                        }
                         if n.direction.x.is_finite() && n.direction.y.is_finite() {
                             n.dv.x +=
                                 n.turbo_max_speed * n.turbo_rate * self.diameter * n.direction.x;
@@ -707,7 +717,7 @@ impl Simulation {
             Some(turbo_max_speed) => turbo_max_speed,
             None => 0.0,
         };
-        let kind = self.kinds[&c.kind];
+        let kind = &self.kinds[&c.kind];
         let aa = self.nodes_inactive.iter().next();
         let idx: usize = match aa {
             Some(idx_) => *idx_,
@@ -731,7 +741,7 @@ impl Simulation {
             turbo_max_speed,
             turbo_rate: 0.0,
             grid: VectorIsize { x: 0, y: 0 },
-            kind: kind,
+            kind: kind.id,
         };
         match aa {
             Some(idx_) => self.nodes[*idx_] = node,

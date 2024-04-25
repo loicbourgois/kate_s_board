@@ -8,6 +8,12 @@ pub struct VectorIsize {
     pub y: isize,
 }
 
+#[derive(Clone)]
+pub struct Kind {
+    pub id: usize,
+    pub mass: f64,
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct NodeConfig {
     pub x: f64,

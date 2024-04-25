@@ -71,6 +71,7 @@ const simulation = await Vellipsis.create({
     friction_ratio: 0.3,
     max_speed: 0.01,
 })
+simulation.add_kind('default', 1)
 for (let index = 0; index < 5000; index++) {
     simulation.add_node(Math.random()*0.3-0.15, Math.random()*0.3-0.15, false)
 }
