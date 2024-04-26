@@ -9,6 +9,11 @@ class Graphics {
         this.context = document.getElementById(canvas_id).getContext("2d")
         this.draw_center = [0, 0]
         this.draw_zoom = 1.0
+        this.render_times = []
+        this.mouse = {}
+        this.context.canvas.addEventListener('mousemove', this.update_mouse())
+        this.resize_canvas()
+        document.addEventListener('mouseover', this.update_mouse())
     }
     resize_canvas() {
         this.context.canvas.width = window.innerWidth 
@@ -67,6 +72,26 @@ class Graphics {
         // const cc = context_coordinates(context, p)
         // context.fillStyle = "#222";
         // context.fillText(txt, cc.x, cc.y); 
+    }
+    get_fps () {
+        this.render_times.push(performance.now())
+        while (this.render_times.length > 100) {
+            this.render_times.shift()
+        }
+        return (1/((this.render_times[this.render_times.length-1] - this.render_times[0])/(this.render_times.length-1)/1000)).toFixed(0)
+    }
+    update_mouse () {
+        return (event) => {
+            this.mouse.canvas_p = {
+                x: event.clientX,
+                y: event.clientY
+            }
+            this.mouse.p = this.context_coordinates_2(this.mouse.canvas_p)
+            document.getElementById("x").innerHTML = this.mouse.canvas_p.x
+            document.getElementById("y").innerHTML = this.mouse.canvas_p.y
+            document.getElementById("x2").innerHTML = this.mouse.p.x.toFixed(2)
+            document.getElementById("y2").innerHTML = this.mouse.p.y.toFixed(2)
+        }
     }
 }
 

@@ -3,6 +3,7 @@ import { link } from "./link.js";
 import { node } from "./node.js";
 import { add_wheel } from "./elements/wheel.js"
 import { add_motor } from "./elements/motor.js"
+import { add_line  } from "./structures/line.js";
 
 
 Vellipsis.create = (config) => {
@@ -41,6 +42,25 @@ Vellipsis.create = (config) => {
             for (let index = 0; index < nodes_count; index++) {
                 yield node(nodes_view, index, node_size);
             }
+        }
+        s.active_nodes = function* () {
+            const nodes_ptr = s.nodes_ptr();
+            const node_size = s.node_size();
+            const nodes_view = new DataView(wasm.memory.buffer, nodes_ptr, s.nodes_size());
+            const nodes_count = s.nodes_count()
+            for (let index = 0; index < nodes_count; index++) {
+                let n = node(nodes_view, index, node_size)
+                if ( n.active!==1 ) {
+                    continue
+                }
+                yield n;
+            }
+        }
+        s.add = (c) => {
+            const adder = {
+                'line': add_line,
+            }[c.structure]
+            adder(s, c)
         }
         return s
     })

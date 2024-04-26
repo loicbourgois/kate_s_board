@@ -1,1 +1,1 @@
-const folders_str = "autopilot chaos clink-strength density editor flow keepinside link-strength ondulation pourin stickiness threewheeldrive volcano"; const get_folders = () => { return folders_str.split(" "); }; export { get_folders, };
+const folders_str = "autopilot chaos clink-strength density editor flow garden keepinside link-strength ondulation pourin stickiness threewheeldrive volcano"; const get_folders = () => { return folders_str.split(" "); }; export { get_folders, };

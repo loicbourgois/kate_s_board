@@ -60,6 +60,7 @@ pub struct Simulation {
     kinds_vec: Vec<Kind>,
     linking: HashMap<(usize, usize), LinkConfig>,
     friction_ratio: f64,
+    transformations: HashMap<(usize, usize), (Option<usize>, Option<usize>)>,
 }
 
 impl Simulation {
@@ -110,7 +111,13 @@ impl Simulation {
             nodes_inactive: HashSet::new(),
             linking: HashMap::new(),
             friction_ratio: config.friction_ratio,
+            transformations: HashMap::new(),
         }
+    }
+
+    pub fn add_transformation(&mut self, a: usize, b: usize, c: Option<usize>, d: Option<usize>) {
+        self.transformations.insert((a, b), (c, d));
+        self.transformations.insert((b, a), (d, c));
     }
 
     pub fn create_entity(
@@ -384,21 +391,24 @@ impl Simulation {
                 }
             }
         }
+        let mut nodes_to_delete = Vec::new();
         unsafe {
             let nodes_1 = &mut (*nodes_ptr);
             let nodes_2 = &mut (*nodes_ptr);
             for (pair, d_sqrd) in pairs {
                 let n1 = &mut nodes_1[pair.0];
                 let n2 = &mut nodes_2[pair.1];
-                if n1.active == 0 || n2.active == 0 {
-                    continue;
-                }
+                // not needed as it is checked when building `pairs`
+                // if n1.active == 0 || n2.active == 0 {
+                //     continue;
+                // }
                 let dist = d_sqrd.sqrt();
                 let delta_position = delta(&n1.p, &n2.p);
                 let crdv = if !n1.fixed && !n2.fixed {
                     self.crdv
                 } else {
-                    self.crdv //* 2.0
+                    // TODO: should we double the response if colliding against fixed node ?
+                    self.crdv // * 2.0
                 };
                 let dd = dist - self.diameter;
                 let dd_crdv = dd * crdv;
@@ -431,7 +441,7 @@ impl Simulation {
                 n1.dp.y += dpn.y * self.crdp2 * r;
                 n2.dp.x -= dpn.x * self.crdp2 * r;
                 n2.dp.y -= dpn.y * self.crdp2 * r;
-                // friction
+                // Link based friction
                 match self.linking.get(&(n1.kind, n2.kind)) {
                     Some(lc) => {
                         self.add_link_2(
@@ -445,7 +455,7 @@ impl Simulation {
                     }
                     None => {}
                 };
-                // friction 2
+                // Global friction
                 let delta_velocity = delta(&n1.v, &n2.v);
                 let ab = Vector {
                     x: delta_position.y,
@@ -464,7 +474,23 @@ impl Simulation {
                 n1.dv.y += dy * self.friction_ratio;
                 n2.dv.x -= dx * self.friction_ratio;
                 n2.dv.y -= dy * self.friction_ratio;
+                match self.transformations.get(&(n1.kind, n2.kind)) {
+                    Some(t) => {
+                        match t.0 {
+                            Some(k) => n1.kind = k,
+                            None => nodes_to_delete.push(n1.idx),
+                        };
+                        match t.1 {
+                            Some(k) => n2.kind = k,
+                            None => nodes_to_delete.push(n2.idx),
+                        };
+                    }
+                    None => {}
+                }
             }
+        }
+        for nidx in nodes_to_delete {
+            self.delete_node(nidx);
         }
         // links
         let mut links_to_delete = Vec::new();

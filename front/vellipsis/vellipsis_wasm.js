@@ -256,6 +256,15 @@ export class Simulation {
         return Simulation.__wrap(ret);
     }
     /**
+    * @param {number} a
+    * @param {number} b
+    * @param {number | undefined} [c]
+    * @param {number | undefined} [d]
+    */
+    add_transformation(a, b, c, d) {
+        wasm.simulation_add_transformation(this.__wbg_ptr, a, b, !isLikeNone(c), isLikeNone(c) ? 0 : c, !isLikeNone(d), isLikeNone(d) ? 0 : d);
+    }
+    /**
     * @param {Uint32Array} node_ids
     * @param {Uint32Array} orientation_node_ids
     * @returns {number}
