@@ -7,6 +7,9 @@ import {
     distance,
     find_angle,
 } from "../vellipsis/math.js"
+import {
+    add_ship
+} from "./utils.js"
 const update_mouse = (graphics, simulation) => {
     return (a) => {
         data.mouse.canvas_p = {
@@ -35,8 +38,8 @@ const tick = (simulation, graphics) => {
 }
 const config = [
     {
-        kind: 'rock',
-        color: '#422',
+        kind: 'metal',
+        color: '#ff8',
         density: 1.0,
     },
 ]
@@ -47,6 +50,38 @@ const render = (simulation, graphics) => {
         render_times.shift()
     }
     graphics.clear()
+    let aa = 0;
+    for (const p of targets) {
+        graphics.fill_circle({
+            x: p[0],
+            y: p[1],
+        }, simulation.diameter*1.4, "#080")
+        graphics.text({
+            x: p[0],
+            y: p[1],
+        }, `${aa}`)
+        aa += 1
+    }
+    for (const ship of ships) {
+        graphics.fill_circle(ship.target, simulation.diameter*1.4, "#0f0")
+        graphics.fill_circle(ship.next_target, simulation.diameter*1.4, "#0b0")
+    }
+    for (const n of simulation.nodes()){
+        if (Math.abs(n.turbo_rate) > 0.1) {
+            const r = 0.005+Math.random()*0.003
+            const r2 = 0.004+Math.random()*0.001
+            const p = {
+                x: n.p2.x + n.direction.x * r,
+                y: n.p2.y + n.direction.y * r,
+            }
+            const p2 = {
+                x: n.p2.x + n.direction.x * r2,
+                y: n.p2.y + n.direction.y * r2,
+            }
+            graphics.fill_circle(p, simulation.diameter*0.7, "#f00")
+            graphics.fill_circle(p2, simulation.diameter*0.9, "#f80")
+        }
+    }
     for (const n of simulation.nodes()) {
         if ( n.active!==1 ) {
             continue
@@ -56,12 +91,7 @@ const render = (simulation, graphics) => {
             console.error(n)
         }
         let color = config[n.kind].color
-        graphics.fill_circle(n.p2, simulation.diameter*1.5, color)
-    }
-    for (const l of simulation.links()) {
-        graphics.line(l.a.p, l.b.p, "#fff", 1)
-        // console.log(l)
-        // throw "wop"
+        graphics.fill_circle(n.p2, simulation.diameter*1.4, color)
     }
     document.getElementById("nodes_count").innerHTML = simulation.nodes_count()
     document.getElementById("links_count").innerHTML = simulation.links_count()
@@ -75,24 +105,14 @@ const data = {
     previous_state: null,
 }
 const simulation = await Vellipsis.create({
-    // crdv: 20.0,
-    // crdp: 0.01,
-    // crdv2: 0.0,
-    // crdp2: 0.0,
-    // diameter: 0.01,
-    // gravity: 0.0,
-    // central_gravity: 0.0,
-    // ticker: 1,
-    // friction_ratio: 0.0,
-    // max_speed: 0.05,
     crdv: 8.0,
     crdp: 1.0,
-    crdv2: 0.01,
-    crdp2: 0.001,
+    crdv2: 0.0,
+    crdp2: 0.0,
     diameter: 0.008,
     gravity: 0.0,
     ticker: 10,
-    friction_ratio: 0.3,
+    friction_ratio: 0.0,
     max_speed: 0.001,
     central_gravity: 0.0,
 })
@@ -120,7 +140,7 @@ document.body.innerHTML = `
 const graphics = new Graphics("canvas")
 document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
 graphics.resize_canvas()
-graphics.draw_zoom = 1.
+graphics.draw_zoom = 1.5
 graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
 graphics.context.canvas.addEventListener('mousedown', () => {
     data.add_node = true
@@ -178,21 +198,8 @@ const drive = (graphics, s, ship) => {
     const approach_speed = dttp - dtt
     const pid2_r = ship.pid2.update(approach_speed)
     const pid4_r = ship.pid4.update(sasat)
-    graphics.fill_circle(scm, s.diameter*1.5, "#0ff")
-    let aa = 0;
-    for (const p of targets) {
-        graphics.fill_circle({
-            x: p[0],
-            y: p[1],
-        }, s.diameter*1.5, "#080")
-        graphics.text({
-            x: p[0],
-            y: p[1],
-        }, `${aa}`)
-        aa += 1
-    }
-    graphics.fill_circle(ship.target, s.diameter*1.5, "#0f0")
-    graphics.fill_circle(ship.next_target, s.diameter*1.5, "#0b0")
+    // graphics.fill_circle(scm, s.diameter*1.5, "#0ff")
+    
     const controls_to_activate = []
     if (pid_r < 0.0) {
         controls_to_activate.push('clock');
@@ -285,10 +292,10 @@ const drive = (graphics, s, ship) => {
             fire
         ) {
             s.set_turbo_rate(tid, -1.0)
-            graphics.fill_circle(tp, s.diameter*1.5, "#f00")
+            // graphics.fill_circle(tp, s.diameter*1.5, "#f00")
         } else {
             s.set_turbo_rate(tid, -0.0)
-            graphics.fill_circle(tp, s.diameter*1.5, "#ff0")
+            // graphics.fill_circle(tp, s.diameter*1.5, "#ff0")
         }
     }
     for (const pid of [
@@ -323,168 +330,13 @@ const line_2 = (context, p1, p2, color, line_width) => {
     context.stroke();
 }
 
-const get_pid = (kp, ki, kd, target, mul, base) => {
-    const pid = {
-        kp: kp,
-        ki: ki,
-        kd: kd,
-        errors: [],
-        errors_long: [],
-        target: target,
-        last_error: 0.0,
-        y_mul: mul,
-        y_base: base,
-    }
-    for (let index = 0; index < 80; index++) {
-        pid.errors.push(0.0)
-    }
-    for (let index = 0; index < 500; index++) {
-        pid.errors_long.push(0.0)
-    }
-    pid.update = (value) => {
-        let error = pid.target - value
-        if (!value) {
-            error = 0
-        }
-        pid.errors.push(error)
-        pid.errors.shift()
-        pid.errors_long.push(error)
-        pid.errors_long.shift()
-        let es = 0.0
-        let a = 0
-        let b = 0
-        for (let i = 0; i < pid.errors.length; i++) {
-            const e = pid.errors[i];
-            es += e
-        }
-        for (let i = 0; i < pid.errors_long.length; i++) {
-            const e = pid.errors_long[i];
-            if (e > 0) {
-                a += 1
-            } else {
-                b += 1
-            }
-        }
-        a = Math.abs(a)
-        b = Math.abs(b)
-        pid.overshoots = (Math.max(a, b) / (a+b)).toFixed(4)
-        pid.p = pid.kp * error
-        pid.i = pid.ki * es / pid.errors.length
-        pid.d = pid.kd * (pid.target - pid.last_error)
-        pid.last_error = error
-        return pid.p + pid.i + pid.d;
-    }
-    return pid
-}
-const add_ship = (s, model_str, position) => {
-    let max_length = 0
-    for (const line of model_str.split("\n")) {
-        max_length = Math.max(line.length, max_length)
-    }
-    max_length += 1
-    const ship2 = []
-    for (const line of model_str.split("\n")) {
-        let spaces = ""
-        for (let index = line.length; index < max_length; index++) {
-            spaces += " "
-        }
-        ship2.push(`${line}${spaces}`)
-    }
-    const ids = {}
-    const turbo_ids = []
-    const ids_2 = []
-    const orientation = {}
-    for (let y = 0; y < ship2.length; y++) {
-        const line = ship2[y]
-        for (let x = 0; x < max_length; x++) {
-            const e = line[x];
-            if (
-                '*t123f'.includes(e)
-            ) {
-                const x2 = x*s.diameter *0.5 + position.x
-                const y2 = -y*s.diameter*1.0 + position.y
-                let id = -1;
-                if (e=='*') {
-                    id = s.add_node(x2, y2, false)
-                } else if (e=='f') {
-                    id = s.add_node(x2, y2, true)
-                } else if (
-                    e == "1"
-                    || e == "2"
-                    || e == "3"
-                ) {
-                    id = s.add_node(x2, y2, false)
-                    orientation[e] = id
-                } else if (e=='t') {
-                    id = s.add_node_3(JSON.stringify({
-                        x: x2,
-                        y: y2,
-                        turbo_max_speed: 0.00005,
-                        fixed: false,
-                    }))
-                    turbo_ids.push(id)
-                }
-                ids[`${x}/${y}`] = id
-                ids_2.push(id)
-            }
-        }
-    }
-    let base_length = s.diameter * 1.2
-    let link_strength = 2
-    let link_damping = 3
-    for (let y = 0; y < ship2.length; y++) {
-        const line = ship2[y]
-        for (let x = 0; x < max_length; x++) {
-            const e = line[x];
-            if (e == "/") {
-                let idx1 = ids[`${x+1}/${y-1}`]
-                let idx2 = ids[`${x-1}/${y+1}`]
-                s.add_link_2(idx1, idx2, base_length,link_strength, link_damping, 1000.0)
-            }
-            if (e == "\\") {
-                let idx1 = ids[`${x+1}/${y+1}`]
-                let idx2 = ids[`${x-1}/${y-1}`]
-                s.add_link_2(idx1, idx2, base_length,link_strength, link_damping, 1000.0)
-            }
-            if (
-                e == "-" 
-                && '*t123f'.includes(line[x-1])
-            ) {
-                let idx1 = ids[`${x-1}/${y}`]
-                let idx2 = ids[`${x+3}/${y}`]
-                s.add_link_2(idx1, idx2, base_length,link_strength, link_damping, 1000.0)
-            }
-        }
-    }
-    const ship_id = s.create_entity(
-        ids_2,
-        [
-            orientation["1"],
-            orientation["2"],
-            orientation["3"],
-        ]
-    )
-    return {
-        id: ship_id,
-        target: {
-            x: targets[0][0],
-            y: targets[0][1],
-        },
-        next_target: {
-            x: targets[1][0],
-            y: targets[1][1],
-        },
-        turbo_ids: turbo_ids,
-        pid1: get_pid(3.0, -2.2, 0.0, 0.5, 300, 300),
-        pid2: get_pid(1.0, 0.0, 0.0, 0.000075, 1000000, 200),
-        pid4: get_pid(1.0, 0.0, -0.0, 0.0, 1000000, 100),
-    }
-}
 for (let i = 0; i < 1; i++) {
     ships.push(add_ship(
         simulation,
         ship_str,
-        { x: Math.random()*0.5-0.25, y: Math.random()*0.5-0.25, },
+        // { x: Math.random()*0.5-0.25, y: Math.random()*0.5-0.25, },
+        { x: 0.125, y: 0, },
+        targets,
     ))
 }
 tick(simulation, graphics)
