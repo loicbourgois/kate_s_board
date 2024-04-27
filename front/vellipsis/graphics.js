@@ -4,7 +4,7 @@ const min_dim = (context) => {
 
 
 class Graphics {
-    constructor(canvas_id) {
+    constructor(canvas_id, resize_ratio, div_id) {
         this.canvas_id = canvas_id;
         this.context = document.getElementById(canvas_id).getContext("2d")
         this.draw_center = [0, 0]
@@ -12,12 +12,16 @@ class Graphics {
         this.render_times = []
         this.mouse = {}
         this.context.canvas.addEventListener('mousemove', this.update_mouse())
-        this.resize_canvas()
+        this.resize_canvas(resize_ratio)
+        this.div_id = div_id
         document.addEventListener('mouseover', this.update_mouse())
     }
-    resize_canvas() {
-        this.context.canvas.width = window.innerWidth 
-        this.context.canvas.height = window.innerHeight 
+    resize_canvas(resize_ratio) {
+        if (!resize_ratio) {
+            resize_ratio = 1
+        }
+        this.context.canvas.width = window.innerWidth * resize_ratio
+        this.context.canvas.height = window.innerHeight * resize_ratio
     }
     context_coordinates_2(p) {
         return {
@@ -56,6 +60,7 @@ class Graphics {
     fill_circle (p, diameter, color) {
         const context = this.context
         const cc = this.context_coordinates(p)
+        
         const radius = diameter * min_dim(context) * 0.5 * this.draw_zoom;
         context.beginPath();
         context.arc(cc.x, cc.y, radius, 0, 2 * Math.PI, false);
@@ -83,14 +88,14 @@ class Graphics {
     update_mouse () {
         return (event) => {
             this.mouse.canvas_p = {
-                x: event.clientX,
-                y: event.clientY
+                x: event.clientX - this.context.canvas.offsetLeft,
+                y: event.clientY - this.context.canvas.offsetTop,
             }
             this.mouse.p = this.context_coordinates_2(this.mouse.canvas_p)
-            document.getElementById("x").innerHTML = this.mouse.canvas_p.x
-            document.getElementById("y").innerHTML = this.mouse.canvas_p.y
-            document.getElementById("x2").innerHTML = this.mouse.p.x.toFixed(2)
-            document.getElementById("y2").innerHTML = this.mouse.p.y.toFixed(2)
+            document.getElementById(this.div_id + "-x").innerHTML = this.mouse.canvas_p.x
+            document.getElementById(this.div_id + "-y").innerHTML = this.mouse.canvas_p.y
+            document.getElementById(this.div_id + "-x2").innerHTML = this.mouse.p.x.toFixed(2)
+            document.getElementById(this.div_id + "-y2").innerHTML = this.mouse.p.y.toFixed(2)
         }
     }
 }

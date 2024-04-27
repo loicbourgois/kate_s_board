@@ -115,7 +115,23 @@ impl Simulation {
         }
     }
 
-    pub fn add_transformation(&mut self, a: usize, b: usize, c: Option<usize>, d: Option<usize>) {
+    pub fn add_transformation(
+        &mut self,
+        a_: String,
+        b_: String,
+        c_: Option<String>,
+        d_: Option<String>,
+    ) {
+        let a = self.kinds[&a_].id;
+        let b = self.kinds[&b_].id;
+        let c = match c_ {
+            Some(c__) => Some(self.kinds[&c__].id),
+            None => None,
+        };
+        let d = match d_ {
+            Some(d__) => Some(self.kinds[&d__].id),
+            None => None,
+        };
         self.transformations.insert((a, b), (c, d));
         self.transformations.insert((b, a), (d, c));
     }
@@ -377,9 +393,9 @@ impl Simulation {
                         if n1.idx >= n2.idx {
                             continue;
                         }
-                        if n1.fixed && n2.fixed {
-                            continue;
-                        }
+                        // if n1.fixed && n2.fixed {
+                        //     continue;
+                        // }
                         if n1.z != n2.z {
                             continue;
                         }
@@ -398,82 +414,87 @@ impl Simulation {
             for (pair, d_sqrd) in pairs {
                 let n1 = &mut nodes_1[pair.0];
                 let n2 = &mut nodes_2[pair.1];
-                // not needed as it is checked when building `pairs`
-                // if n1.active == 0 || n2.active == 0 {
-                //     continue;
-                // }
-                let dist = d_sqrd.sqrt();
-                let delta_position = delta(&n1.p, &n2.p);
-                let crdv = if !n1.fixed && !n2.fixed {
-                    self.crdv
-                } else {
-                    // TODO: should we double the response if colliding against fixed node ?
-                    self.crdv // * 2.0
-                };
-                let dd = dist - self.diameter;
-                let dd_crdv = dd * crdv;
-                let crdp_crdv = self.crdp * crdv;
-                let u1 = delta_position.x * dd_crdv;
-                let u2 = delta_position.y * dd_crdv;
-                let u3 = delta_position.x * dd_crdv;
-                let u4 = delta_position.y * dd_crdv;
-                n1.dv.x += u1;
-                n1.dv.y += u2;
-                n2.dv.x -= u3;
-                n2.dv.y -= u4;
-                n1.dp.x += u1 * crdp_crdv;
-                n1.dp.y += u2 * crdp_crdv;
-                n2.dp.x -= u3 * crdp_crdv;
-                n2.dp.y -= u4 * crdp_crdv;
-                let crdv2 = if !n1.fixed && !n2.fixed {
-                    self.crdv2
-                } else {
-                    self.crdv2 * 2.0
-                };
-                let cr = collision_response(&n1, &n2);
-                n1.dv.x += cr.x * crdv2;
-                n1.dv.y += cr.y * crdv2;
-                n2.dv.x -= cr.x * crdv2;
-                n2.dv.y -= cr.y * crdv2;
-                let dpn = normalize_2(delta_position);
-                let r = (dist - self.diameter) / self.diameter;
-                n1.dp.x += dpn.x * self.crdp2 * r;
-                n1.dp.y += dpn.y * self.crdp2 * r;
-                n2.dp.x -= dpn.x * self.crdp2 * r;
-                n2.dp.y -= dpn.y * self.crdp2 * r;
-                // Link based friction
-                match self.linking.get(&(n1.kind, n2.kind)) {
-                    Some(lc) => {
-                        self.add_link_2(
-                            n1.idx,
-                            n2.idx,
-                            self.diameter,
-                            lc.strength,
-                            lc.damping,
-                            lc.stress_limit,
-                        );
-                    }
-                    None => {}
-                };
-                // Global friction
-                let delta_velocity = delta(&n1.v, &n2.v);
-                let ab = Vector {
-                    x: delta_position.y,
-                    y: -delta_position.x,
-                };
-                let ac = delta_velocity;
-                let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
-                let dx = ab.x * coeff;
-                let dy = ab.y * coeff;
-                let fr = self.friction_ratio;
-                let ac = delta_velocity;
-                let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
-                let dx = ab.x * coeff;
-                let dy = ab.y * coeff;
-                n1.dv.x += dx * self.friction_ratio;
-                n1.dv.y += dy * self.friction_ratio;
-                n2.dv.x -= dx * self.friction_ratio;
-                n2.dv.y -= dy * self.friction_ratio;
+                if (!n1.fixed) || (!n2.fixed) {
+                    // not needed as it is checked when building `pairs`
+                    // if n1.active == 0 || n2.active == 0 {
+                    //     continue;
+                    // }
+                    let dist = d_sqrd.sqrt();
+                    let delta_position = delta(&n1.p, &n2.p);
+                    let crdv = if !n1.fixed && !n2.fixed {
+                        self.crdv
+                    } else {
+                        // Should we double the response if colliding against fixed node ?
+                        // probably not
+                        // see energy-conservation
+                        self.crdv // * 2.0
+                    };
+                    let dd = dist - self.diameter;
+                    let dd_crdv = dd * crdv;
+                    let crdp_crdv = self.crdp * crdv;
+                    let u1 = delta_position.x * dd_crdv;
+                    let u2 = delta_position.y * dd_crdv;
+                    let u3 = delta_position.x * dd_crdv;
+                    let u4 = delta_position.y * dd_crdv;
+                    n1.dv.x += u1;
+                    n1.dv.y += u2;
+                    n2.dv.x -= u3;
+                    n2.dv.y -= u4;
+                    n1.dp.x += u1 * crdp_crdv;
+                    n1.dp.y += u2 * crdp_crdv;
+                    n2.dp.x -= u3 * crdp_crdv;
+                    n2.dp.y -= u4 * crdp_crdv;
+                    let crdv2 = if !n1.fixed && !n2.fixed {
+                        self.crdv2
+                    } else {
+                        // here we need to keep it
+                        self.crdv2 * 2.0
+                    };
+                    let cr = collision_response(&n1, &n2);
+                    n1.dv.x += cr.x * crdv2;
+                    n1.dv.y += cr.y * crdv2;
+                    n2.dv.x -= cr.x * crdv2;
+                    n2.dv.y -= cr.y * crdv2;
+                    let dpn = normalize_2(delta_position);
+                    let r = (dist - self.diameter) / self.diameter;
+                    n1.dp.x += dpn.x * self.crdp2 * r;
+                    n1.dp.y += dpn.y * self.crdp2 * r;
+                    n2.dp.x -= dpn.x * self.crdp2 * r;
+                    n2.dp.y -= dpn.y * self.crdp2 * r;
+                    // Link based friction
+                    match self.linking.get(&(n1.kind, n2.kind)) {
+                        Some(lc) => {
+                            self.add_link_2(
+                                n1.idx,
+                                n2.idx,
+                                self.diameter,
+                                lc.strength,
+                                lc.damping,
+                                lc.stress_limit,
+                            );
+                        }
+                        None => {}
+                    };
+                    // Global friction
+                    let delta_velocity = delta(&n1.v, &n2.v);
+                    let ab = Vector {
+                        x: delta_position.y,
+                        y: -delta_position.x,
+                    };
+                    let ac = delta_velocity;
+                    let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
+                    let dx = ab.x * coeff;
+                    let dy = ab.y * coeff;
+                    let fr = self.friction_ratio;
+                    let ac = delta_velocity;
+                    let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
+                    let dx = ab.x * coeff;
+                    let dy = ab.y * coeff;
+                    n1.dv.x += dx * self.friction_ratio;
+                    n1.dv.y += dy * self.friction_ratio;
+                    n2.dv.x -= dx * self.friction_ratio;
+                    n2.dv.y -= dy * self.friction_ratio;
+                }
                 match self.transformations.get(&(n1.kind, n2.kind)) {
                     Some(t) => {
                         match t.0 {

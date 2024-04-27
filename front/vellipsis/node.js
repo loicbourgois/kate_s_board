@@ -1,6 +1,8 @@
+import { norm } from "./math.js";
+
 const node = (view, idx, node_size) => {
     const i = idx * node_size;
-    return {
+    const n = {
         idx: idx,
         p: {
             x: view.getFloat64(i, true),
@@ -39,6 +41,9 @@ const node = (view, idx, node_size) => {
         active: view.getUint8(i+8*17+4, true),
         fixed: view.getUint8(i+8*17+5, true),
     }
+    let v = norm(n.v)
+    n.kinetic_energy = 0.5 * n.m * v * v
+    return n
 }
 
 export {

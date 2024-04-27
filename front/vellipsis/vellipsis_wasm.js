@@ -256,13 +256,21 @@ export class Simulation {
         return Simulation.__wrap(ret);
     }
     /**
-    * @param {number} a
-    * @param {number} b
-    * @param {number | undefined} [c]
-    * @param {number | undefined} [d]
+    * @param {string} a_
+    * @param {string} b_
+    * @param {string | undefined} [c_]
+    * @param {string | undefined} [d_]
     */
-    add_transformation(a, b, c, d) {
-        wasm.simulation_add_transformation(this.__wbg_ptr, a, b, !isLikeNone(c), isLikeNone(c) ? 0 : c, !isLikeNone(d), isLikeNone(d) ? 0 : d);
+    add_transformation(a_, b_, c_, d_) {
+        const ptr0 = passStringToWasm0(a_, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(b_, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        var ptr2 = isLikeNone(c_) ? 0 : passStringToWasm0(c_, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len2 = WASM_VECTOR_LEN;
+        var ptr3 = isLikeNone(d_) ? 0 : passStringToWasm0(d_, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len3 = WASM_VECTOR_LEN;
+        wasm.simulation_add_transformation(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
     }
     /**
     * @param {Uint32Array} node_ids
