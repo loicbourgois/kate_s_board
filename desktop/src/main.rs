@@ -23,9 +23,11 @@ use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 use winit::window::Window;
 
-const NUM_PARTICLES: usize = 64;
+const NUM_PARTICLES: usize = 1024 * 16;
 const PARTICLE_SIZE: usize = 4;
 const PARTICLES_PER_GROUP: u32 = 64;
+const WINDOW_WIDTH: usize = 512;
+const WINDOW_HEIGHT: usize = 512;
 
 #[derive(Debug, ShaderType)]
 struct AppState {
@@ -45,8 +47,8 @@ impl AppState {
 impl Default for AppState {
     fn default() -> Self {
         AppState {
-            window_width: 1000.0,
-            window_height: 1000.0,
+            window_width: WINDOW_WIDTH as f32,
+            window_height: WINDOW_HEIGHT as f32,
             num_particles: NUM_PARTICLES as i32,
         }
     }
@@ -185,16 +187,9 @@ fn run_event_loop(
 ) {
     let mut state = Some(AppState::default());
     let mut frame_num = 0;
-
-    // let window_loop = EventLoopWrapper::new(title);
-
     event_loop
         .run(move |event, target| {
-            // Have the closure take ownership of the resources.
-            // `event_loop.run` never returns, therefore we must do this to ensure
-            // the resources are properly cleaned up.
             let _ = (instance, adapter, shader, pipeline_layout);
-
             if let Event::WindowEvent {
                 window_id: _,
                 event,
@@ -209,6 +204,8 @@ fn run_event_loop(
                         surface.configure(&device, &config);
                         // On macos the window needs to be redrawn manually after resizing
                         window.request_redraw();
+                        println!("{}", config.width);
+                        println!("{}", config.height);
                     }
                     WindowEvent::RedrawRequested => {
                         let frame = surface
@@ -309,6 +306,18 @@ fn get_bind_group_layout(device: &Device) -> BindGroupLayout {
                 },
                 count: None,
             },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                    has_dynamic_offset: false,
+                    min_binding_size: wgpu::BufferSize::new(
+                        (WINDOW_WIDTH * WINDOW_HEIGHT * mem::size_of::<f32>()) as _,
+                    ),
+                },
+                count: None,
+            },
         ],
     })
 }
@@ -318,6 +327,7 @@ fn get_bind_group(
     bind_group_layout: &BindGroupLayout,
     uniform_buffer: &Buffer,
     particle_buffers: &Vec<Buffer>,
+    screen_buffers: &Vec<Buffer>,
 ) -> Vec<BindGroup> {
     let mut bds = Vec::new();
     for i in 0..2 {
@@ -336,6 +346,10 @@ fn get_bind_group(
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: particle_buffers[i].as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: screen_buffers[i].as_entire_binding(),
                 },
             ],
         }))
@@ -356,19 +370,17 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut rng = WyRand::new_seed(42);
     let mut unif = || rng.generate::<f32>();
     for x in initial_particle_data.chunks_mut(PARTICLE_SIZE) {
-        x[0] = unif();
-        x[1] = unif();
+        x[0] = unif() * 0.9;
+        x[1] = unif() * 0.9;
         x[2] = x[0];
         x[3] = x[1];
     }
-
     let mut particle_buffers = Vec::<wgpu::Buffer>::new();
+    let mut screen_buffers = Vec::<wgpu::Buffer>::new();
     let mut particle_bind_groups = Vec::<wgpu::BindGroup>::new();
-
     let backends = wgpu::util::backend_bits_from_env().unwrap_or_default();
     let dx12_shader_compiler = wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default();
     let gles_minor_version = wgpu::util::gles_minor_version_from_env().unwrap_or_default();
-
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends,
         flags: wgpu::InstanceFlags::from_build_config().with_env(),
@@ -402,7 +414,21 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     | wgpu::BufferUsages::COPY_DST,
             }),
         );
+        let mut v_: Vec<f32> = Vec::new();
+        for _ in 0..(WINDOW_WIDTH * WINDOW_HEIGHT * 16) {
+            v_.push(0.0);
+        }
+        screen_buffers.push(
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("screen_buffer"),
+                contents: bytemuck::cast_slice(&v_),
+                usage: wgpu::BufferUsages::VERTEX
+                    | wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::COPY_DST,
+            }),
+        );
     }
+
     let shader = get_shader(&device);
     let uniform_buffer = get_uniform_buffer(&device);
     let bind_group_layout = get_bind_group_layout(&device);
@@ -411,6 +437,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &bind_group_layout,
         &uniform_buffer,
         &particle_buffers,
+        &screen_buffers,
     );
     let pipeline_layout = get_pipeline_layout(&device, &bind_group_layout);
     let swapchain_format = get_swapchain_format(&surface, &adapter);
@@ -465,6 +492,30 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(
+                            (WINDOW_WIDTH * WINDOW_HEIGHT * mem::size_of::<f32>()) as _,
+                        ),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(
+                            (WINDOW_WIDTH * WINDOW_HEIGHT * mem::size_of::<f32>()) as _,
+                        ),
+                    },
+                    count: None,
+                },
             ],
             label: None,
         });
@@ -487,7 +538,15 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: particle_buffers[(i + 1) % 2].as_entire_binding(), // bind to opposite buffer
+                    resource: particle_buffers[(i + 1) % 2].as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: screen_buffers[i].as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: screen_buffers[(i + 1) % 2].as_entire_binding(),
                 },
             ],
             label: None,
@@ -496,7 +555,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let work_group_count = ((NUM_PARTICLES as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
     let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: None,
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("compute.wgsl"))),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("compute_1.wgsl"))),
     });
     let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
         label: Some("Compute pipeline"),
