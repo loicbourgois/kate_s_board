@@ -1,8 +1,42 @@
 import { Vellipsis } from "../vellipsis/vellipsis.js";
 import { Graphics } from "../vellipsis/graphics.js"
 import { get_elapsed_formatted } from "../vellipsis/utils.js"
+import { 
+    delta,  
+    normalize,
+    distance,
+    norm,
+} from "../vellipsis/math.js"
+// const update_mouse = (graphics, simulation) => {
+//     return (a) => {
+//         data.mouse.canvas_p = {
+//             x: a.clientX,
+//             y: a.clientY
+//         }
+//         data.mouse.p = graphics.context_coordinates_2(data.mouse.canvas_p)
+//         document.getElementById("x").innerHTML = data.mouse.canvas_p.x
+//         document.getElementById("y").innerHTML = data.mouse.canvas_p.y
+//         document.getElementById("x2").innerHTML = data.mouse.p.x.toFixed(2)
+//         document.getElementById("y2").innerHTML = data.mouse.p.y.toFixed(2)
+//         simulation.set_mouse(data.mouse.p.x, data.mouse.p.y)
+//     }
+// }
+const get_kind = () => {
+    if (Math.random() > 0.5) {
+        return 'fire_1'
+    }  else {
+        return 'fire_2'
+    }
+}
 const tick = (simulation, graphics) => {
     const start = performance.now()
+    if (data.add_node) {
+        simulation.add_node_js({
+            x: data.mouse.p.x + Math.random() * simulation.diameter - simulation.diameter*0.5,
+            y: data.mouse.p.y + Math.random() * simulation.diameter - simulation.diameter*0.5,
+            kind: get_kind(),
+        })
+    }
     simulation.tick()
     document.getElementById("physic").innerHTML = get_elapsed_formatted(start)
     const render_start = performance.now()
@@ -37,6 +71,11 @@ const render = (simulation, graphics) => {
     document.getElementById("nodes_inactive_count").innerHTML = simulation.nodes_inactive_count()
     document.getElementById("fps").innerHTML = (1/((render_times[render_times.length-1] - render_times[0])/(render_times.length-1)/1000)).toFixed(0)
 }
+const data = {
+    mouse: {},
+    times: [],
+    previous_state: null,
+}
 const simulation = await Vellipsis.create({
     crdv: 0.0,
     crdp: 0.0,
@@ -63,6 +102,13 @@ for (const k1 of ['fire_1', 'fire_2']) {
         })
     }
 }
+simulation.add_interaction({
+    k1: 'fire_1',
+    k2: 'fire_2',
+    crdv: 0.1,
+    crdp: 20,
+    friction_ratio: 0.0,
+})
 for (const k1 of ['rock']) {
     for (const k2 of ['fire_1', 'fire_2']) {
         simulation.add_interaction({
@@ -74,22 +120,54 @@ for (const k1 of ['rock']) {
         })
     }
 }
-const aquarium = (c) => {
-    const width = c.width
-    simulation.add({
-        structure: 'rect',
-        kind: 'rock',
+const add_static_line = (kind, a, b, c, d) => {
+    const p1 = {
+        x: a,
+        y: b,
+    }
+    const p2 = {
+        x: c,
+        y: d,
+    }
+    const delt = delta(p1, p2)
+    const dist = distance(p1, p2)
+    const n = normalize(delt)
+    const v = {
+        x: n.x * simulation.diameter,
+        y: n.y * simulation.diameter,
+    }
+    simulation.add_node_js({
+        x: p1.x, 
+        y: p1.y,
+        kind: kind,
         fixed: true,
-        ratio: 1,
-        p1: {
-            x:-width/2+c.x,
-            y:-0.2,
-        },
-        p2: {
-            x:width/2+c.x,
-            y:0.42,
-        }
     })
+    let i = 1
+    while (true) {
+        const p3 = {
+            x: p1.x + v.x * i,
+            y: p1.y + v.y * i,
+        }
+        if (distance(p1, p3) > dist) {
+            break
+        }
+        simulation.add_node_js({
+            x: p3.x,
+            y: p3.y,
+            kind: kind,
+            fixed: true,
+        })
+        i++
+    }
+}
+const add_stack = (c) => {
+    const width = c.width
+    for (let index = 0; index < 1; index++) {
+        add_static_line('rock', -width/2+c.x, -0.2, width/2+c.x, -0.2)
+        add_static_line('rock', -width/2+c.x, 0.42, width/2+c.x, 0.42)
+        add_static_line('rock', -width/2+c.x, -0.2, -width/2+c.x, 0.42)
+        add_static_line('rock', width/2+c.x, -0.2, width/2+c.x, 0.42)
+    }
     const aa = 0.5
     for (let x = -c.width/2 + simulation.diameter; x < c.width / 2 * 0.99 ; x+=simulation.diameter) {
         for (let y = 0; y < c.height-0.001; y+=simulation.diameter) {
@@ -108,7 +186,7 @@ const aquarium = (c) => {
         }
     }
 }
-aquarium({
+add_stack({
     width: 0.75,
     height: 0.3,
     x: 0,
@@ -132,5 +210,6 @@ document.body.innerHTML = `
     <canvas id="canvas"></canvas>
 `
 const graphics = new Graphics("canvas", 1, "")
+graphics.resize_canvas()
 graphics.draw_center = [0.0, 0.1]
 tick(simulation, graphics)

@@ -1,7 +1,29 @@
+use crate::link::Linking;
 use crate::vector::Vector;
 use serde::{Deserialize, Serialize};
-
 pub const NODE_SIZE: usize = 6 * 16 + 4 * 8 + 4 * 4;
+
+#[derive(Deserialize, Serialize)]
+pub struct InteractionConfig {
+    pub k1: String,
+    pub k2: String,
+    pub linking: Option<Linking>,
+    pub crdv: f64, // collision response velocity
+    pub crdp: f64, // collision response position
+    pub friction_ratio: f64,
+}
+
+#[derive(Clone)]
+pub struct Interaction {
+    pub k1: usize,
+    pub k2: usize,
+    pub k1_str: String,
+    pub k2_str: String,
+    pub linking: Option<Linking>,
+    pub crdv: f64, // collision response velocity
+    pub crdp: f64, // collision response position
+    pub friction_ratio: f64,
+}
 
 pub struct VectorIsize {
     pub x: isize,

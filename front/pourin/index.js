@@ -48,23 +48,31 @@ const data = {
     previous_state: null,
 }
 const simulation = await Vellipsis.create({
-    crdv: 50.0,
-    crdp: 0.007,
-    crdv2: 0.0,
-    crdp2: 0.0,
-    // crdv: 50.0,
-    // crdp: 0.00,
-    // crdv2: 0.0,
-    // crdp2: 0.001,
+    crdv: 0.25,
+    crdp: 10.0,
     diameter: 0.01,
     gravity: 0.000005,
     central_gravity: 0.0,
     ticker: 3,
     friction_ratio: 0.0,
-    max_speed: 0.005,
+    max_speed: 0.5,
 })
-simulation.add_kind('rock', 1.0)
-simulation.add_kind('fire_1', 1.0)
+simulation.add_kind('glass', 1.0)
+simulation.add_kind('water', 1.0)
+simulation.add_interaction({
+    k1: 'glass',
+    k2: 'water',
+    crdv: 0.5,
+    crdp: 10.0,
+    friction_ratio: 0.0,
+})
+simulation.add_interaction({
+    k1: 'water',
+    k2: 'water',
+    crdv: 0.25,
+    crdp: 10.0,
+    friction_ratio: 0.0,
+})
 const add_static_line = (kind, a, b, c, d) => {
     const p1 = {
         x: a,
@@ -107,23 +115,21 @@ const add_static_line = (kind, a, b, c, d) => {
 }
 const add_stack = (c) => {
     const width = c.width
-    for (let index = 0; index < 4; index++) {
-        add_static_line('rock', -width/2+c.x, -0.2, width/2+c.x, -0.2)
-        add_static_line('rock', -width/2+c.x, -0.2, -width/2+c.x, 0.32)
-        add_static_line('rock', width/2+c.x, -0.2, width/2+c.x, 0.32)
-    }
+    add_static_line('glass', -width/2+c.x, -0.2, width/2+c.x, -0.2)
+    add_static_line('glass', -width/2+c.x, -0.2, -width/2+c.x, 0.32)
+    add_static_line('glass', width/2+c.x, -0.2, width/2+c.x, 0.32)
     for (let y = 0; y < c.height-0.001; y+=simulation.diameter) {
         simulation.add_node_js({
             x: c.x+Math.random()*0.001,
             y: y-0.19,
-            kind: 'fire_1',
+            kind: 'water',
             fixed: false,
         })
     }
     simulation.add_node_js({
         x: c.x+c.width*0.5+simulation.diameter,
         y: c.height-0.2,
-        kind: 'fire_1',
+        kind: 'water',
         fixed: true,
     })
 }
@@ -151,14 +157,5 @@ document.body.innerHTML = `
     <canvas id="canvas"></canvas>
 `
 const graphics = new Graphics("canvas", 1.0, "s0")
-// document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
-graphics.draw_zoom = 1
 graphics.draw_center = [0.0, 0.1]
-// graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
-// graphics.context.canvas.addEventListener('mousedown', () => {
-//     data.add_node = true
-// })
-// graphics.context.canvas.addEventListener('mouseup', () => {
-//     data.add_node = false
-// })
 tick(simulation, graphics)

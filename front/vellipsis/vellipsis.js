@@ -4,6 +4,8 @@ import { node } from "./node.js";
 import { add_wheel } from "./elements/wheel.js"
 import { add_motor } from "./elements/motor.js"
 import { add_line  } from "./structures/line.js";
+import { add_rect  } from "./structures/rect.js";
+import { add_filled_rect  } from "./structures/filled_rect.js";
 
 
 Vellipsis.create = (config) => {
@@ -21,6 +23,9 @@ Vellipsis.create = (config) => {
         }
         s.set_linking_config = (x) => {
             return s.set_linking_config_(JSON.stringify(x))
+        }
+        s.add_interaction = (x) => {
+            return s.add_interaction_(JSON.stringify(x))
         }
         s.links = function* () {
             const nodes_ptr = s.nodes_ptr();
@@ -59,6 +64,8 @@ Vellipsis.create = (config) => {
         s.add = (c) => {
             const adder = {
                 'line': add_line,
+                'rect': add_rect,
+                'filled_rect': add_filled_rect,
             }[c.structure]
             adder(s, c)
         }

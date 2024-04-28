@@ -1,57 +1,4 @@
-const get_pid = (kp, ki, kd, target, mul, base) => {
-    const pid = {
-        kp: kp,
-        ki: ki,
-        kd: kd,
-        errors: [],
-        errors_long: [],
-        target: target,
-        last_error: 0.0,
-        y_mul: mul,
-        y_base: base,
-    }
-    for (let index = 0; index < 80; index++) {
-        pid.errors.push(0.0)
-    }
-    for (let index = 0; index < 500; index++) {
-        pid.errors_long.push(0.0)
-    }
-    pid.update = (value) => {
-        let error = pid.target - value
-        if (!value) {
-            error = 0
-        }
-        pid.errors.push(error)
-        pid.errors.shift()
-        pid.errors_long.push(error)
-        pid.errors_long.shift()
-        let es = 0.0
-        let a = 0
-        let b = 0
-        for (let i = 0; i < pid.errors.length; i++) {
-            const e = pid.errors[i];
-            es += e
-        }
-        for (let i = 0; i < pid.errors_long.length; i++) {
-            const e = pid.errors_long[i];
-            if (e > 0) {
-                a += 1
-            } else {
-                b += 1
-            }
-        }
-        a = Math.abs(a)
-        b = Math.abs(b)
-        pid.overshoots = (Math.max(a, b) / (a+b)).toFixed(4)
-        pid.p = pid.kp * error
-        pid.i = pid.ki * es / pid.errors.length
-        pid.d = pid.kd * (pid.target - pid.last_error)
-        pid.last_error = error
-        return pid.p + pid.i + pid.d;
-    }
-    return pid
-}
-const add_ship = (s, model_str, position, targets) => {
+const add_structure_from_str = (s, model_str, position) => {
     let max_length = 0
     for (const line of model_str.split("\n")) {
         max_length = Math.max(line.length, max_length)
@@ -65,6 +12,7 @@ const add_ship = (s, model_str, position, targets) => {
         }
         ship2.push(`${line}${spaces}`)
     }
+    const height = model_str.split("\n").length
     const ids = {}
     const turbo_ids = []
     const ids_2 = []
@@ -76,8 +24,8 @@ const add_ship = (s, model_str, position, targets) => {
             if (
                 '*t123f'.includes(e)
             ) {
-                const x2 = x*s.diameter *0.5 + position.x
-                const y2 = -y*s.diameter*1.0 + position.y
+                const x2 = x*s.diameter *0.25 + position.x - max_length * s.diameter * 0.12 
+                const y2 = -y*s.diameter*.43 + position.y + height * s.diameter * 0.2
                 let id = -1;
                 if (e=='*') {
                     id = s.add_node(x2, y2, false)
@@ -104,9 +52,9 @@ const add_ship = (s, model_str, position, targets) => {
             }
         }
     }
-    let base_length = s.diameter
+    let base_length = s.diameter * 0.1
     let link_strength = 2
-    let link_damping = 3
+    let link_damping = 4
     for (let y = 0; y < ship2.length; y++) {
         const line = ship2[y]
         for (let x = 0; x < max_length; x++) {
@@ -141,20 +89,8 @@ const add_ship = (s, model_str, position, targets) => {
     )
     return {
         id: ship_id,
-        target: {
-            x: targets[0][0],
-            y: targets[0][1],
-        },
-        next_target: {
-            x: targets[1][0],
-            y: targets[1][1],
-        },
-        turbo_ids: turbo_ids,
-        pid1: get_pid(1., -0.7, -0.0, 0.5, 300, 300),
-        pid2: get_pid(1.0, 0.0, 0.0, 0.000075, 1000000, 200),
-        pid4: get_pid(1.0, 0.0, -0.0, 0.0, 1000000, 100),
     }
 }
 export {
-    add_ship,
+    add_structure_from_str,
 }

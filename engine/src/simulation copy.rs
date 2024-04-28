@@ -3,6 +3,7 @@ use crate::clink::Clink;
 use crate::config::Config;
 use crate::entity::Entity;
 use crate::link::Link;
+use crate::link::LinkConfig;
 use crate::link::LINK_SIZE;
 use crate::math::collision_response;
 use crate::math::delta;
@@ -13,8 +14,6 @@ use crate::math::lerp;
 use crate::math::norm;
 use crate::math::normalize_2;
 use crate::math::rotate;
-use crate::node::Interaction;
-use crate::node::InteractionConfig;
 use crate::node::Kind;
 use crate::node::Node;
 use crate::node::NodeConfig;
@@ -41,6 +40,8 @@ pub struct Simulation {
     central_gravity: f64,
     crdv: f64,
     crdp: f64,
+    // crdv2: f64,
+    // crdp2: f64,
     pub store_data: bool,
     data_1: Vec<(usize, f64, String)>,
     data_2: Vec<(usize, f64, String)>,
@@ -57,8 +58,8 @@ pub struct Simulation {
     uid_counter: usize,
     kinds: HashMap<String, Kind>,
     kinds_vec: Vec<Kind>,
+    interactions: HashMap<(usize, usize), LinkConfig>,
     friction_ratio: f64,
-    interactions: HashMap<(usize, usize), Interaction>,
     transformations: HashMap<(usize, usize), (Option<usize>, Option<usize>)>,
 }
 
@@ -88,6 +89,8 @@ impl Simulation {
             central_gravity: config.central_gravity,
             crdv: config.crdv,
             crdp: config.crdp,
+            crdv2: config.crdv2,
+            crdp2: config.crdp2,
             store_data: false,
             data_1: Vec::new(),
             data_2: Vec::new(),
@@ -97,7 +100,7 @@ impl Simulation {
             beziers: Vec::new(),
             control_points: Vec::new(),
             ticker: config.ticker,
-            max_speed: config.max_speed * config.diameter,
+            max_speed: config.max_speed,
             grid: HashMap::new(),
             linked: HashMap::new(),
             entities: Vec::new(),
@@ -106,28 +109,10 @@ impl Simulation {
             uid_counter: 0,
             links_inactive: HashSet::new(),
             nodes_inactive: HashSet::new(),
-            interactions: HashMap::new(),
+            linking: HashMap::new(),
             friction_ratio: config.friction_ratio,
             transformations: HashMap::new(),
         }
-    }
-
-    pub fn add_interaction_(&mut self, str_: String) {
-        let ic: InteractionConfig = serde_json::from_str(&str_).unwrap();
-        let k1 = self.kinds[&ic.k1].id;
-        let k2 = self.kinds[&ic.k2].id;
-        let i = Interaction {
-            k1,
-            k2,
-            k1_str: ic.k1,
-            k2_str: ic.k2,
-            linking: None,
-            crdv: ic.crdv,
-            crdp: ic.crdp,
-            friction_ratio: ic.friction_ratio,
-        };
-        self.interactions.insert((k1, k2), i.clone());
-        self.interactions.insert((k2, k1), i);
     }
 
     pub fn add_transformation(
@@ -180,13 +165,13 @@ impl Simulation {
         self.kinds_vec.push(k);
     }
 
-    // pub fn set_linking_config_(&mut self, str_: String) {
-    //     let config: LinkConfig = serde_json::from_str(&str_).unwrap();
-    //     let a = self.kinds[&config.kind_1].id;
-    //     let b = self.kinds[&config.kind_2].id;
-    //     self.linking.insert((a, b), config.clone());
-    //     self.linking.insert((b, a), config);
-    // }
+    pub fn set_linking_config_(&mut self, str_: String) {
+        let config: LinkConfig = serde_json::from_str(&str_).unwrap();
+        let a = self.kinds[&config.kind_1].id;
+        let b = self.kinds[&config.kind_2].id;
+        self.linking.insert((a, b), config.clone());
+        self.linking.insert((b, a), config);
+    }
 
     pub fn get_position(&mut self, entity_id: usize) -> Vector {
         self.entities[entity_id].p
@@ -408,6 +393,9 @@ impl Simulation {
                         if n1.idx >= n2.idx {
                             continue;
                         }
+                        // if n1.fixed && n2.fixed {
+                        //     continue;
+                        // }
                         if n1.z != n2.z {
                             continue;
                         }
@@ -426,62 +414,80 @@ impl Simulation {
             for (pair, d_sqrd) in pairs {
                 let n1 = &mut nodes_1[pair.0];
                 let n2 = &mut nodes_2[pair.1];
-                // not needed as it is checked when building `pairs`
-                // if n1.active == 0 || n2.active == 0 {
-                //     continue;
-                // }
                 if (!n1.fixed) || (!n2.fixed) {
-                    match self.interactions.get(&(n1.kind, n2.kind)) {
-                        Some(i) => {
-                            let dd = d_sqrd.sqrt() - self.diameter;
-                            let dpn = normalize_2(delta(&n1.p, &n2.p));
-                            let crdp_ = i.crdp * dd * self.diameter;
-                            let crdv_ = i.crdv * dd;
-                            n1.dv.x += dpn.x * crdv_;
-                            n1.dv.y += dpn.y * crdv_;
-                            n2.dv.x -= dpn.x * crdv_;
-                            n2.dv.y -= dpn.y * crdv_;
-                            n1.dp.x += dpn.x * crdp_;
-                            n1.dp.y += dpn.y * crdp_;
-                            n2.dp.x -= dpn.x * crdp_;
-                            n2.dp.y -= dpn.y * crdp_;
+                    // not needed as it is checked when building `pairs`
+                    // if n1.active == 0 || n2.active == 0 {
+                    //     continue;
+                    // }
+                    let dist = d_sqrd.sqrt();
+                    let delta_position = delta(&n1.p, &n2.p);
+                    let crdv = self.crdv;
+                    let dd = dist - self.diameter;
+                    let dd_crdv = dd * crdv;
+                    let crdp_crdv = self.crdp * crdv;
+                    let u1 = delta_position.x * dd_crdv;
+                    let u2 = delta_position.y * dd_crdv;
+                    let u3 = delta_position.x * dd_crdv;
+                    let u4 = delta_position.y * dd_crdv;
+                    n1.dv.x += u1;
+                    n1.dv.y += u2;
+                    n2.dv.x -= u3;
+                    n2.dv.y -= u4;
+                    // n1.dp.x += u1 * crdp_crdv;
+                    // n1.dp.y += u2 * crdp_crdv;
+                    // n2.dp.x -= u3 * crdp_crdv;
+                    // n2.dp.y -= u4 * crdp_crdv;
+                    // let crdv2 = if !n1.fixed && !n2.fixed {
+                    //     self.crdv2
+                    // } else {
+                    //     // here we need to keep it
+                    //     self.crdv2 * 2.0
+                    // };
+                    // let cr = collision_response(&n1, &n2);
+                    // n1.dv.x += cr.x * crdv2;
+                    // n1.dv.y += cr.y * crdv2;
+                    // n2.dv.x -= cr.x * crdv2;
+                    // n2.dv.y -= cr.y * crdv2;
+                    let dpn = normalize_2(delta_position);
+                    let r = (dist - self.diameter) / self.diameter;
+                    let crdp_r = self.crdp * r;
+                    n1.dp.x += dpn.x * crdp_r;
+                    n1.dp.y += dpn.y * crdp_r;
+                    n2.dp.x -= dpn.x * crdp_r;
+                    n2.dp.y -= dpn.y * crdp_r;
+                    // Link based friction
+                    match self.linking.get(&(n1.kind, n2.kind)) {
+                        Some(lc) => {
+                            self.add_link_2(
+                                n1.idx,
+                                n2.idx,
+                                self.diameter,
+                                lc.strength,
+                                lc.damping,
+                                lc.stress_limit,
+                            );
                         }
                         None => {}
-                    }
-
-                    // Link based friction
-                    // match self.linking.get(&(n1.kind, n2.kind)) {
-                    //     Some(lc) => {
-                    //         self.add_link_2(
-                    //             n1.idx,
-                    //             n2.idx,
-                    //             self.diameter,
-                    //             lc.strength,
-                    //             lc.damping,
-                    //             lc.stress_limit,
-                    //         );
-                    //     }
-                    //     None => {}
-                    // };
+                    };
                     // Global friction
-                    // let delta_velocity = delta(&n1.v, &n2.v);
-                    // let ab = Vector {
-                    //     x: delta_position.y,
-                    //     y: -delta_position.x,
-                    // };
-                    // let ac = delta_velocity;
-                    // let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
-                    // let dx = ab.x * coeff;
-                    // let dy = ab.y * coeff;
-                    // let fr = self.friction_ratio;
-                    // let ac = delta_velocity;
-                    // let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
-                    // let dx = ab.x * coeff;
-                    // let dy = ab.y * coeff;
-                    // n1.dv.x += dx * self.friction_ratio;
-                    // n1.dv.y += dy * self.friction_ratio;
-                    // n2.dv.x -= dx * self.friction_ratio;
-                    // n2.dv.y -= dy * self.friction_ratio;
+                    let delta_velocity = delta(&n1.v, &n2.v);
+                    let ab = Vector {
+                        x: delta_position.y,
+                        y: -delta_position.x,
+                    };
+                    let ac = delta_velocity;
+                    let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
+                    let dx = ab.x * coeff;
+                    let dy = ab.y * coeff;
+                    let fr = self.friction_ratio;
+                    let ac = delta_velocity;
+                    let coeff = (ab.x * ac.x + ab.y * ac.y) / (ab.x * ab.x + ab.y * ab.y);
+                    let dx = ab.x * coeff;
+                    let dy = ab.y * coeff;
+                    n1.dv.x += dx * self.friction_ratio;
+                    n1.dv.y += dy * self.friction_ratio;
+                    n2.dv.x -= dx * self.friction_ratio;
+                    n2.dv.y -= dy * self.friction_ratio;
                 }
                 match self.transformations.get(&(n1.kind, n2.kind)) {
                     Some(t) => {

@@ -1,20 +1,20 @@
 
 import { Vellipsis } from "../vellipsis/vellipsis.js";
 import { Graphics } from "../vellipsis/graphics.js"
-const update_mouse = (graphics, simulation) => {
-    return (a) => {
-        data.mouse.canvas_p = {
-            x: a.clientX,
-            y: a.clientY
-        }
-        data.mouse.p = graphics.context_coordinates_2(data.mouse.canvas_p)
-        document.getElementById("x").innerHTML = data.mouse.canvas_p.x
-        document.getElementById("y").innerHTML = data.mouse.canvas_p.y
-        document.getElementById("x2").innerHTML = data.mouse.p.x.toFixed(2)
-        document.getElementById("y2").innerHTML = data.mouse.p.y.toFixed(2)
-        simulation.set_mouse(data.mouse.p.x, data.mouse.p.y)
-    }
-}
+// const update_mouse = (graphics, simulation) => {
+//     return (a) => {
+//         data.mouse.canvas_p = {
+//             x: a.clientX,
+//             y: a.clientY
+//         }
+//         data.mouse.p = graphics.context_coordinates_2(data.mouse.canvas_p)
+//         document.getElementById("x").innerHTML = data.mouse.canvas_p.x
+//         document.getElementById("y").innerHTML = data.mouse.canvas_p.y
+//         document.getElementById("x2").innerHTML = data.mouse.p.x.toFixed(2)
+//         document.getElementById("y2").innerHTML = data.mouse.p.y.toFixed(2)
+//         simulation.set_mouse(data.mouse.p.x, data.mouse.p.y)
+//     }
+// }
 const tick = (simulation, graphics) => {
     const start = performance.now()
     if (data.add_node) {
@@ -60,28 +60,35 @@ const data = {
     previous_state: null,
 }
 const simulation = await Vellipsis.create({
-    crdv: 70.0,
+    crdv: 0.0,
     crdp: 0.0,
-    crdv2: 0.2,
+    crdv2: 0.0,
     crdp2: 0.0,
-    diameter: 0.008,
+    diameter: 0.01,
     gravity: 0.0,
-    central_gravity: -0.00009,
+    central_gravity: -0.0001,
     ticker: 1,
     friction_ratio: 0.3,
-    max_speed: 0.01,
+    max_speed: 1.0,
 })
 simulation.add_kind('default', 1)
 for (let index = 0; index < 5000; index++) {
     simulation.add_node(Math.random()*0.3-0.15, Math.random()*0.3-0.15, false)
 }
+simulation.add_interaction({
+    k1: 'default',
+    k2: 'default',
+    crdv: 0.1,
+    crdp: 15.0,
+    friction_ratio: 0.0,
+})
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">
-            <p>x: <span id="x"></span></p>
-            <p>y: <span id="y"></span></p>
-            <p>x2: <span id="x2"></span></p>
-            <p>y2: <span id="y2"></span></p>
+            <p>x: <span id="-x"></span></p>
+            <p>y: <span id="-y"></span></p>
+            <p>x2: <span id="-x2"></span></p>
+            <p>y2: <span id="-y2"></span></p>
             <p>physics:  <span id="physic"></span></p>
             <p>graphics: <span id="graphics"></span></p>
             <p>nodes: <span id="nodes_count"></span></p>
@@ -89,15 +96,15 @@ document.body.innerHTML = `
     </div>
     <canvas id="canvas"></canvas>
 `
-const graphics = new Graphics("canvas")
-document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
+const graphics = new Graphics("canvas", 1, "")
+// document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
 graphics.resize_canvas()
 graphics.draw_zoom = 0.8
-graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
-graphics.context.canvas.addEventListener('mousedown', () => {
-    data.add_node = true
-})
-graphics.context.canvas.addEventListener('mouseup', () => {
-    data.add_node = false
-})
+// graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
+// graphics.context.canvas.addEventListener('mousedown', () => {
+//     data.add_node = true
+// })
+// graphics.context.canvas.addEventListener('mouseup', () => {
+//     data.add_node = false
+// })
 tick(simulation, graphics)

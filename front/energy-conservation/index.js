@@ -11,43 +11,6 @@ const config = {
             color: '#f22',
             density: 1.0,
         },
-        // {
-        //     kind: 'water',
-        //     color: '#4ff8',
-        //     density: 1.0,
-        // },
-        // {
-        //     kind: 'wet_dirt',
-        //     color: '#ff3',
-        //     density: 1.0,
-        // },
-        // {
-        //     kind: 'wet_wet_dirt',
-        //     color: '#f33',
-        //     density: 1.0,
-        // },
-        // {
-        //     kind: 'sun',
-        //     color: '#633',
-        //     density: 1.0,
-        // },
-        // {
-        //     kind: 'sunlight',
-        //     color: '#633',
-        //     density: 1.0,
-        // },
-    ],
-    transformations: [
-        // ['dirt', 'water', 'wet_dirt', null],
-        // ['wet_dirt', 'water', 'wet_wet_dirt', null],
-        // ['wet_wet_dirt', 'dirt', 'wet_dirt', 'wet_dirt'],
-        // ['wet_wet_dirt', 'wet_dirt', 'wet_dirt', 'wet_wet_dirt'],
-        // ['dirt', 'water', 'wet_dirt', null],
-    ],
-    collisions: [
-        {
-
-        }
     ],
 }
 const tick = (simulation, graphics) => {
@@ -110,10 +73,8 @@ for (const div_id of ['s0', 's1', 's2', 's3']) {
     `)
     const graphics = new Graphics(`canvas-${div_id}`, 0.5, div_id)
     const simulation = await Vellipsis.create({
-        crdv: 0.0,
-        crdp: 0.0,
-        crdv2: 1.,
-        crdp2: 0.,
+        crdv: 1.0,
+        crdp: 0.9,
         diameter: 0.01,
         gravity: 0.0,
         central_gravity: 0.0,

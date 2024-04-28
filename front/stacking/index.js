@@ -88,10 +88,10 @@ document.body.innerHTML = `
     </div>
 `
 const crs = [
-    [100.0, 0.001, 0.0, 0.0],
-    [100.0, 0.0005, 0.0, 0.000001],
-    [50.0, 0.007, 0.0, 0.0],
-    [0.0, 0.0, 0.99, 0.005],
+    [1.0, 1.],
+    [1.0, 2.],
+    [1.0, 0.75],
+    [1.0, 0.5],
     // [0.0, 0.0, 0.99, 0.01],
 ]
 const simulations = []
@@ -121,12 +121,10 @@ for (const id of [0,1,2,3]) {
     const simulation = await Vellipsis.create({
         crdv: cr[0],
         crdp: cr[1],
-        crdv2: cr[2],
-        crdp2: cr[3],
-        diameter: 0.01,
+        diameter: 0.004,
         gravity: 0.00001,
         central_gravity: 0.0,
-        ticker: 1,
+        ticker: 10,
         friction_ratio: 0.0,
         max_speed: 1,
     })

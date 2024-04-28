@@ -10,20 +10,20 @@ import {
 import {
     add_ship
 } from "./utils.js"
-const update_mouse = (graphics, simulation) => {
-    return (a) => {
-        data.mouse.canvas_p = {
-            x: a.clientX,
-            y: a.clientY
-        }
-        data.mouse.p = graphics.context_coordinates_2(data.mouse.canvas_p)
-        document.getElementById("x").innerHTML = data.mouse.canvas_p.x
-        document.getElementById("y").innerHTML = data.mouse.canvas_p.y
-        document.getElementById("x2").innerHTML = data.mouse.p.x.toFixed(2)
-        document.getElementById("y2").innerHTML = data.mouse.p.y.toFixed(2)
-        simulation.set_mouse(data.mouse.p.x, data.mouse.p.y)
-    }
-}
+// const update_mouse = (graphics, simulation) => {
+//     return (a) => {
+//         data.mouse.canvas_p = {
+//             x: a.clientX,
+//             y: a.clientY
+//         }
+//         data.mouse.p = graphics.context_coordinates_2(data.mouse.canvas_p)
+//         document.getElementById("x").innerHTML = data.mouse.canvas_p.x
+//         document.getElementById("y").innerHTML = data.mouse.canvas_p.y
+//         document.getElementById("x2").innerHTML = data.mouse.p.x.toFixed(2)
+//         document.getElementById("y2").innerHTML = data.mouse.p.y.toFixed(2)
+//         simulation.set_mouse(data.mouse.p.x, data.mouse.p.y)
+//     }
+// }
 const tick = (simulation, graphics) => {
     const start = performance.now()
     simulation.tick()
@@ -99,11 +99,11 @@ const render = (simulation, graphics) => {
     document.getElementById("nodes_inactive_count").innerHTML = simulation.nodes_inactive_count()
     document.getElementById("fps").innerHTML = (1/((render_times[render_times.length-1] - render_times[0])/(render_times.length-1)/1000)).toFixed(0)
 }
-const data = {
-    mouse: {},
-    times: [],
-    previous_state: null,
-}
+// const data = {
+//     mouse: {},
+//     times: [],
+//     previous_state: null,
+// }
 const simulation = await Vellipsis.create({
     crdv: 8.0,
     crdp: 1.0,
@@ -113,19 +113,30 @@ const simulation = await Vellipsis.create({
     gravity: 0.0,
     ticker: 10,
     friction_ratio: 0.0,
-    max_speed: 0.001,
+    max_speed: 0.5,
     central_gravity: 0.0,
 })
 for (const x of config) {
     simulation.add_kind(x.kind, x.density)
 }
+for (const x of config) {
+    for (const y of config) {
+        simulation.add_interaction({
+            k1: x.kind,
+            k2: y.kind,
+            crdv: 1.0,
+            crdp: 1.0,
+            friction_ratio: 0.0,
+        })
+    }
+}
 document.body.innerHTML = `
     <div id="left">
         <div id="infos">
-            <p>x: <span id="x"></span></p>
-            <p>y: <span id="y"></span></p>
-            <p>x2: <span id="x2"></span></p>
-            <p>y2: <span id="y2"></span></p>
+            <p>x: <span id="-x"></span></p>
+            <p>y: <span id="-y"></span></p>
+            <p>x2: <span id="-x2"></span></p>
+            <p>y2: <span id="-y2"></span></p>
             <p>physics:  <span id="physic"></span></p>
             <p>graphics: <span id="graphics"></span></p>
             <p>fps:      <span id="fps"></span></p>
@@ -137,17 +148,17 @@ document.body.innerHTML = `
     </div>
     <canvas id="canvas"></canvas>
 `
-const graphics = new Graphics("canvas")
-document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
+const graphics = new Graphics("canvas", 1, "")
+// document.addEventListener('mouseover', update_mouse(graphics, simulation), false)
 graphics.resize_canvas()
 graphics.draw_zoom = 1.5
-graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
-graphics.context.canvas.addEventListener('mousedown', () => {
-    data.add_node = true
-})
-graphics.context.canvas.addEventListener('mouseup', () => {
-    data.add_node = false
-})
+// graphics.context.canvas.addEventListener('mousemove', update_mouse(graphics, simulation))
+// graphics.context.canvas.addEventListener('mousedown', () => {
+//     data.add_node = true
+// })
+// graphics.context.canvas.addEventListener('mouseup', () => {
+//     data.add_node = false
+// })
 
 const ship_str = `
          *---*

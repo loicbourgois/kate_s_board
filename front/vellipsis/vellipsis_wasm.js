@@ -256,6 +256,14 @@ export class Simulation {
         return Simulation.__wrap(ret);
     }
     /**
+    * @param {string} str_
+    */
+    add_interaction_(str_) {
+        const ptr0 = passStringToWasm0(str_, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.simulation_add_interaction_(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
     * @param {string} a_
     * @param {string} b_
     * @param {string | undefined} [c_]
@@ -293,14 +301,6 @@ export class Simulation {
         const ptr0 = passStringToWasm0(kind, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         wasm.simulation_add_kind(this.__wbg_ptr, ptr0, len0, mass);
-    }
-    /**
-    * @param {string} str_
-    */
-    set_linking_config_(str_) {
-        const ptr0 = passStringToWasm0(str_, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.simulation_set_linking_config_(this.__wbg_ptr, ptr0, len0);
     }
     /**
     * @param {number} entity_id
