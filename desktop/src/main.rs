@@ -1,3 +1,9 @@
+mod particle_counter;
+mod render;
+use crate::particle_counter::ParticleCounter;
+use crate::render::get_render_pipeline;
+use crate::render::get_render_pipeline_layout;
+use crate::render::get_render_shader;
 use encase::ShaderType;
 use nanorand::Rng;
 use nanorand::WyRand;
@@ -105,50 +111,9 @@ async fn get_device_queue(adapter: &Adapter) -> (Device, Queue) {
         .expect("Failed to create device")
 }
 
-fn get_shader(device: &Device) -> ShaderModule {
-    device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: None,
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("draw.wgsl"))),
-    })
-}
-
-fn get_pipeline_layout(device: &Device, bind_group_layout: &BindGroupLayout) -> PipelineLayout {
-    device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: None,
-        bind_group_layouts: &[bind_group_layout],
-        push_constant_ranges: &[],
-    })
-}
-
 fn get_swapchain_format(surface: &Surface, adapter: &Adapter) -> TextureFormat {
     let swapchain_capabilities = surface.get_capabilities(&adapter);
     swapchain_capabilities.formats[0]
-}
-
-fn get_render_pipeline(
-    device: &Device,
-    pipeline_layout: &PipelineLayout,
-    shader: &ShaderModule,
-    swapchain_format: TextureFormat,
-) -> RenderPipeline {
-    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: None,
-        layout: Some(&pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &shader,
-            entry_point: "vs_main",
-            buffers: &[],
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &shader,
-            entry_point: "fs_main",
-            targets: &[Some(swapchain_format.into())],
-        }),
-        primitive: wgpu::PrimitiveState::default(),
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState::default(),
-        multiview: None,
-    })
 }
 
 fn configure(
@@ -184,6 +149,7 @@ fn run_event_loop(
     compute_pipeline: &ComputePipeline,
     particle_bind_groups: &Vec<BindGroup>,
     work_group_count: u32,
+    particle_counter: &ParticleCounter,
 ) {
     let mut state = Some(AppState::default());
     let mut frame_num = 0;
@@ -221,6 +187,18 @@ fn run_event_loop(
                             &state_ref.as_wgsl_bytes().expect(
                                 "Error in encase translating AppState struct to WGSL bytes.",
                             ),
+                        );
+                        wgpu::util::DownloadBuffer::read_buffer(
+                            &device,
+                            &queue,
+                            &particle_counter.buffers[(frame_num + 1) % 2].slice(..),
+                            |zoop| match zoop {
+                                Ok(view) => {
+                                    let result: &[u32; 1] = bytemuck::from_bytes(&view);
+                                    println!("particle_count: {:?}", result);
+                                }
+                                Err(e) => {}
+                            },
                         );
                         let mut encoder =
                             device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -429,7 +407,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         );
     }
 
-    let shader = get_shader(&device);
+    let shader = get_render_shader(&device);
     let uniform_buffer = get_uniform_buffer(&device);
     let bind_group_layout = get_bind_group_layout(&device);
     let bind_groups = get_bind_group(
@@ -439,9 +417,10 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &particle_buffers,
         &screen_buffers,
     );
-    let pipeline_layout = get_pipeline_layout(&device, &bind_group_layout);
+    let render_pipeline_layout = get_render_pipeline_layout(&device, &bind_group_layout);
     let swapchain_format = get_swapchain_format(&surface, &adapter);
-    let render_pipeline = get_render_pipeline(&device, &pipeline_layout, &shader, swapchain_format);
+    let render_pipeline =
+        get_render_pipeline(&device, &render_pipeline_layout, &shader, swapchain_format);
     let mut config = configure(&window, &surface, &adapter, &device);
     let sim_param_data = [
         0.001f32, // speed
@@ -453,6 +432,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         contents: bytemuck::cast_slice(&sim_param_data),
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
+
+    let particle_counter = ParticleCounter::new(&device);
+
     let compute_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
@@ -516,6 +498,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     },
                     count: None,
                 },
+                particle_counter.bind_group_layout_entries[0],
+                particle_counter.bind_group_layout_entries[1],
             ],
             label: None,
         });
@@ -548,6 +532,14 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     binding: 4,
                     resource: screen_buffers[(i + 1) % 2].as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: particle_counter.bindings[0],
+                    resource: particle_counter.buffers[i].as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: particle_counter.bindings[1],
+                    resource: particle_counter.buffers[(i + 1) % 2].as_entire_binding(),
+                },
             ],
             label: None,
         }));
@@ -568,7 +560,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &instance,
         &adapter,
         &shader,
-        &pipeline_layout,
+        &render_pipeline_layout,
         &queue,
         &device,
         &render_pipeline,
@@ -580,6 +572,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &compute_pipeline,
         &particle_bind_groups,
         work_group_count,
+        &particle_counter,
     );
 }
 
