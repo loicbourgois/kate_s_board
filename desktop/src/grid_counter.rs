@@ -3,23 +3,30 @@ use wgpu::util::DeviceExt;
 use wgpu::Buffer;
 use wgpu::Device;
 
-pub struct ParticleCounter {
+// const DIAMETER: f32 = 0.02;
+// const WORLD_WIDTH: f32 = 1.0;
+// const CELL_SIZE: f32 = DIAMETER;
+const GRID_CELL_COUNT_SIDE: usize = 64;
+
+pub struct GridCounter {
     pub buffers: Vec<Buffer>,
     pub bind_group_layout_entries: Vec<wgpu::BindGroupLayoutEntry>,
     pub bindings: Vec<u32>,
 }
 
-impl ParticleCounter {
-    pub fn new(device: &Device) -> ParticleCounter {
-        let bindings: Vec<u32> = vec![5, 6];
+impl GridCounter {
+    pub fn new(device: &Device) -> GridCounter {
+        let bindings: Vec<u32> = vec![7, 8];
         let mut buffers = Vec::<wgpu::Buffer>::new();
         let mut bind_group_layout_entries = Vec::<wgpu::BindGroupLayoutEntry>::new();
         for i in 0..2 {
             let mut data: Vec<i32> = Vec::new();
-            data.push(0);
+            for _ in 0..GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE {
+                data.push(0);
+            }
             buffers.push(
                 device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("particle_counter_buffer"),
+                    label: Some("grid_buffer"),
                     contents: bytemuck::cast_slice(&data),
                     usage: wgpu::BufferUsages::VERTEX
                         | wgpu::BufferUsages::STORAGE
@@ -40,7 +47,7 @@ impl ParticleCounter {
                 count: None,
             });
         }
-        ParticleCounter {
+        GridCounter {
             buffers,
             bindings,
             bind_group_layout_entries,

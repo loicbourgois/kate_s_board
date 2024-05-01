@@ -2,6 +2,7 @@ struct AppState {
     window_width: f32,
     window_height: f32,
     num_particles: i32,
+    diameter: f32,
 };
 
 
