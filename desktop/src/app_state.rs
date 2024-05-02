@@ -18,6 +18,15 @@ impl AppState {
         buffer.write(self)?;
         Ok(buffer.into_inner())
     }
+
+    pub fn get_buffer(device: &Device) -> Buffer {
+        device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: std::mem::size_of::<AppState>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        })
+    }
 }
 
 impl Default for AppState {
@@ -29,13 +38,4 @@ impl Default for AppState {
             diameter: 0.02,
         }
     }
-}
-
-pub fn get_app_state_buffer(device: &Device) -> Buffer {
-    device.create_buffer(&wgpu::BufferDescriptor {
-        label: None,
-        size: std::mem::size_of::<AppState>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    })
 }

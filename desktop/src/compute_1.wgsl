@@ -1,15 +1,4 @@
-struct Node {
-  p : vec2<f32>,
-  pp: vec2<f32>,
-};
-
-
-struct AppState {
-    window_width: f32,
-    window_height: f32,
-    num_particles: i32,
-    diameter: f32,
-};
+{common}
 
 
 @group(0) @binding(0) var<uniform> sp : AppState;
@@ -20,23 +9,6 @@ struct AppState {
 @group(0) @binding(5) var<storage, read_write> particle_counter : array<atomic<i32>>;
 @group(0) @binding(6) var<storage, read_write> particle_counter_to_clean : array<i32>;
 @group(0) @binding(7) var<storage, read_write> grid_counter : array<atomic<i32>>;
-@group(0) @binding(8) var<storage, read_write> grid_counter_to_clean : array<i32>;
-
-
-fn delta(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    return b - a;
-}
-
-
-fn distance_sqrd(a: vec2<f32>, b: vec2<f32>) -> f32{
-  let dp = delta(a, b);
-  return dp.x * dp.x + dp.y * dp.y;
-}
-
-
-fn distance(a: vec2<f32>, b: vec2<f32>) -> f32{
-  return sqrt(distance_sqrd(a, b));
-}
 
 
 @compute
@@ -47,7 +19,6 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   if (idx >= total) {
     return;
   }
-  // let diameter = 0.02;
   let grid_cell_count_side = 64;
   let diam_sqrd = sp.diameter*sp.diameter;
   var n1 = nis[idx];
@@ -90,13 +61,12 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   let i = i32(pt.x * 1600.0) + i32(pt.y * 1200.0) * 1600;
   screen_buffer[i] = 1.0;
   particle_counter_to_clean[0] = 0;
-  let gridx = max(0, min(i32(floor(p.x / sp.diameter)) + grid_cell_count_side/2, grid_cell_count_side-1));
-  let gridy = max(0, min(i32(floor(p.y / sp.diameter)) + grid_cell_count_side/2, grid_cell_count_side-1));
-  let grididx = gridx + gridy * grid_cell_count_side;
-  for (var i = 0; i < 64*64; i++) {
-    grid_counter_to_clean[i] = 0;
-  }
-
-  atomicAdd(&grid_counter[grididx], 1);
+  // let gridx = max(0, min(i32(floor(p.x / sp.diameter)) + grid_cell_count_side/2, grid_cell_count_side-1));
+  // let gridy = max(0, min(i32(floor(p.y / sp.diameter)) + grid_cell_count_side/2, grid_cell_count_side-1));
+  // let grididx = gridx + gridy * grid_cell_count_side;
+  // for (var i = 0; i < 64*64; i++) {
+  //   grid_counter_to_clean[i] = 0;
+  // }
+  // atomicAdd(&grid_counter[grididx], 1);
   atomicAdd(&particle_counter[0], 1);
 }

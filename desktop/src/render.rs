@@ -7,11 +7,13 @@ use std::mem;
 use wgpu::BindGroup;
 use wgpu::BindGroupLayout;
 use wgpu::Buffer;
+use wgpu::CommandEncoder;
 use wgpu::Device;
 use wgpu::PipelineLayout;
 use wgpu::RenderPipeline;
 use wgpu::ShaderModule;
 use wgpu::TextureFormat;
+use wgpu::TextureView;
 
 pub fn get_render_pipeline(
     device: &Device,
@@ -40,9 +42,10 @@ pub fn get_render_pipeline(
 }
 
 pub fn get_render_shader(device: &Device) -> ShaderModule {
+    let source = include_str!("render.wgsl").replace("{common}", include_str!("common.wgsl"));
     device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: None,
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("render.wgsl"))),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&source)),
     })
 }
 
@@ -132,4 +135,30 @@ pub fn get_render_bind_group(
         }))
     }
     bds
+}
+
+pub fn render_setup_pass(
+    encoder: &mut CommandEncoder,
+    view: &TextureView,
+    render_pipeline: &RenderPipeline,
+    render_bind_groups: &Vec<BindGroup>,
+    frame_num: usize,
+) {
+    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: None,
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            view: &view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
+                store: wgpu::StoreOp::Store,
+            },
+        })],
+        depth_stencil_attachment: None,
+        timestamp_writes: None,
+        occlusion_query_set: None,
+    });
+    rpass.set_pipeline(&render_pipeline);
+    rpass.set_bind_group(0, &render_bind_groups[frame_num % 2], &[]);
+    rpass.draw(0..6, 0..1);
 }

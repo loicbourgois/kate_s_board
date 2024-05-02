@@ -1,6 +1,6 @@
 use crate::app_state::AppState;
-use crate::grid_counter::GridCounter;
 use crate::particle_counter::ParticleCounter;
+use crate::ComputeGridReset;
 use crate::NUM_PARTICLES;
 use crate::PARTICLE_SIZE;
 use crate::WINDOW_HEIGHT;
@@ -9,22 +9,23 @@ use std::borrow::Cow;
 use std::mem;
 use wgpu::BindGroup;
 use wgpu::Buffer;
+use wgpu::CommandEncoder;
 use wgpu::ComputePipeline;
 use wgpu::Device;
 
 pub fn get_compute_stuff(
     device: &Device,
-    grid_counter: &GridCounter,
+    compute_grid_reset: &ComputeGridReset,
     particle_counter: &ParticleCounter,
     screen_buffers: &Vec<Buffer>,
     particle_buffers: &Vec<Buffer>,
     app_state_buffer: &Buffer,
 ) -> (ComputePipeline, Vec<BindGroup>) {
+    let source = include_str!("compute_1.wgsl").replace("{common}", include_str!("common.wgsl"));
     let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: None,
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("compute_1.wgsl"))),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&source)),
     });
-
     let compute_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
@@ -90,8 +91,7 @@ pub fn get_compute_stuff(
                 },
                 particle_counter.bind_group_layout_entries[0],
                 particle_counter.bind_group_layout_entries[1],
-                grid_counter.bind_group_layout_entries[0],
-                grid_counter.bind_group_layout_entries[1],
+                compute_grid_reset.compute_bind_group_layout_entry,
             ],
             label: None,
         });
@@ -135,12 +135,8 @@ pub fn get_compute_stuff(
                     resource: particle_counter.buffers[(i + 1) % 2].as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: grid_counter.bindings[0],
-                    resource: grid_counter.buffers[i].as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: grid_counter.bindings[1],
-                    resource: grid_counter.buffers[(i + 1) % 2].as_entire_binding(),
+                    binding: compute_grid_reset.counter_binding,
+                    resource: compute_grid_reset.counter_buffer.as_entire_binding(),
                 },
             ],
             label: None,
@@ -152,6 +148,21 @@ pub fn get_compute_stuff(
         module: &compute_shader,
         entry_point: "main",
     });
-
     return (compute_pipeline, compute_bind_groups);
+}
+
+pub fn compute_setup_pass(
+    encoder: &mut CommandEncoder,
+    compute_pipeline: &ComputePipeline,
+    compute_bind_groups: &Vec<BindGroup>,
+    work_group_count: u32,
+    frame_num: usize,
+) {
+    let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+        label: None,
+        timestamp_writes: None,
+    });
+    cpass.set_pipeline(&compute_pipeline);
+    cpass.set_bind_group(0, &compute_bind_groups[frame_num % 2], &[]);
+    cpass.dispatch_workgroups(work_group_count, 1, 1);
 }

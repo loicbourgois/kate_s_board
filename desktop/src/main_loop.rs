@@ -1,6 +1,8 @@
 use crate::app_state::AppState;
-use crate::grid_counter::GridCounter;
+use crate::compute_1::compute_setup_pass;
 use crate::particle_counter::ParticleCounter;
+use crate::render::render_setup_pass;
+use crate::ComputeGridReset;
 use std::time::Instant;
 use wgpu::Adapter;
 use wgpu::BindGroup;
@@ -8,7 +10,6 @@ use wgpu::Buffer;
 use wgpu::ComputePipeline;
 use wgpu::Device;
 use wgpu::Instance;
-// use wgpu::PipelineLayout;
 use wgpu::Queue;
 use wgpu::RenderPipeline;
 use wgpu::ShaderModule;
@@ -36,7 +37,7 @@ pub fn run_event_loop(
     compute_bind_groups: &Vec<BindGroup>,
     work_group_count: u32,
     particle_counter: &ParticleCounter,
-    grid_counter: &GridCounter,
+    compute_grid_reset: &ComputeGridReset,
 ) {
     let mut state = Some(AppState::default());
     let mut frame_num = 0;
@@ -66,20 +67,7 @@ pub fn run_event_loop(
                         let elapsed = frame_start.elapsed().as_millis();
                         println!("elapsed: {}", elapsed);
                         frame_start = Instant::now();
-                        let frame = surface
-                            .get_current_texture()
-                            .expect("Failed to acquire next swap chain texture");
-                        let view = frame
-                            .texture
-                            .create_view(&wgpu::TextureViewDescriptor::default());
-                        let state_ref = state.as_ref().unwrap();
-                        queue.write_buffer(
-                            &app_state_buffer,
-                            0,
-                            &state_ref.as_wgsl_bytes().expect(
-                                "Error in encase translating AppState struct to WGSL bytes.",
-                            ),
-                        );
+                        // READ
                         wgpu::util::DownloadBuffer::read_buffer(
                             &device,
                             &queue,
@@ -95,7 +83,7 @@ pub fn run_event_loop(
                         wgpu::util::DownloadBuffer::read_buffer(
                             &device,
                             &queue,
-                            &grid_counter.buffers[(frame_num + 1) % 2].slice(0..4 * 64 * 64),
+                            &compute_grid_reset.counter_buffer.slice(0..4 * 64 * 64),
                             |zoop| match zoop {
                                 Ok(view) => {
                                     let data: &[u32; 64 * 64] = bytemuck::from_bytes(&view);
@@ -108,40 +96,43 @@ pub fn run_event_loop(
                                 Err(_) => {}
                             },
                         );
+                        // setup
+                        let frame = surface
+                            .get_current_texture()
+                            .expect("Failed to acquire next swap chain texture");
+                        let view = frame
+                            .texture
+                            .create_view(&wgpu::TextureViewDescriptor::default());
+                        // write
+                        let state_ref = state.as_ref().unwrap();
+                        queue.write_buffer(
+                            &app_state_buffer,
+                            0,
+                            &state_ref.as_wgsl_bytes().expect(
+                                "Error in encase translating AppState struct to WGSL bytes.",
+                            ),
+                        );
+                        // encoder
                         let mut encoder =
                             device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                                 label: None,
                             });
-                        {
-                            let mut cpass =
-                                encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                                    label: None,
-                                    timestamp_writes: None,
-                                });
-                            cpass.set_pipeline(&compute_pipeline);
-                            cpass.set_bind_group(0, &compute_bind_groups[frame_num % 2], &[]);
-                            cpass.dispatch_workgroups(work_group_count, 1, 1);
-                        }
-                        {
-                            let mut rpass =
-                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: None,
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: &view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
-                                            store: wgpu::StoreOp::Store,
-                                        },
-                                    })],
-                                    depth_stencil_attachment: None,
-                                    timestamp_writes: None,
-                                    occlusion_query_set: None,
-                                });
-                            rpass.set_pipeline(&render_pipeline);
-                            rpass.set_bind_group(0, &render_bind_groups[frame_num % 2], &[]);
-                            rpass.draw(0..6, 0..1);
-                        }
+                        compute_grid_reset.setup_encoder(&mut encoder);
+                        compute_setup_pass(
+                            &mut encoder,
+                            compute_pipeline,
+                            compute_bind_groups,
+                            work_group_count,
+                            frame_num,
+                        );
+                        render_setup_pass(
+                            &mut encoder,
+                            &view,
+                            render_pipeline,
+                            render_bind_groups,
+                            frame_num,
+                        );
+                        // run
                         queue.submit(Some(encoder.finish()));
                         frame.present();
                         frame_num += 1;

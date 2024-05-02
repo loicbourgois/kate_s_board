@@ -1,15 +1,21 @@
 mod app_state;
 mod compute_1;
-mod grid_counter;
+mod compute_grid_reset;
+mod compute_grid_update;
+mod data;
 mod main_loop;
 mod misc;
 mod particle_counter;
 mod render;
-use crate::app_state::get_app_state_buffer;
+use crate::app_state::AppState;
 use crate::compute_1::get_compute_stuff;
-use crate::grid_counter::GridCounter;
+use crate::compute_grid_reset::ComputeGridReset;
+use crate::compute_grid_update::ComputeGridUpdate;
 use crate::main_loop::run_event_loop;
+use crate::misc::get_device_queue;
+use crate::misc::get_gpu_adapter;
 use crate::misc::get_required_downlevel_capabilities;
+use crate::misc::get_swapchain_format;
 use crate::particle_counter::ParticleCounter;
 use crate::render::get_render_bind_group;
 use crate::render::get_render_bind_group_layout;
@@ -21,11 +27,8 @@ use nanorand::WyRand;
 use wgpu::util::DeviceExt;
 use wgpu::Adapter;
 use wgpu::Device;
-use wgpu::Instance;
-use wgpu::Queue;
 use wgpu::Surface;
 use wgpu::SurfaceConfiguration;
-use wgpu::TextureFormat;
 use winit::event_loop::EventLoop;
 use winit::window::Window;
 
@@ -34,42 +37,7 @@ const PARTICLE_SIZE: usize = 4;
 const PARTICLES_PER_GROUP: u32 = 64;
 const WINDOW_WIDTH: usize = 512;
 const WINDOW_HEIGHT: usize = 512;
-
-async fn get_gpu_adapter(instance: &Instance, surface: &Surface<'_>) -> Adapter {
-    log::info!("Available adapters:");
-    for a in instance.enumerate_adapters(wgpu::Backends::all()) {
-        log::info!("    {:?}", a.get_info())
-    }
-    let adapter = instance
-        .request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
-            force_fallback_adapter: false,
-            compatible_surface: Some(surface),
-        })
-        .await
-        .expect("Failed to find an appropriate adapter");
-    log::info!("Selected adapter: {:?}", adapter.get_info());
-    adapter
-}
-
-async fn get_device_queue(adapter: &Adapter) -> (Device, Queue) {
-    adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default().using_resolution(adapter.limits()),
-            },
-            None,
-        )
-        .await
-        .expect("Failed to create device")
-}
-
-fn get_swapchain_format(surface: &Surface, adapter: &Adapter) -> TextureFormat {
-    let swapchain_capabilities = surface.get_capabilities(&adapter);
-    swapchain_capabilities.formats[0]
-}
+const MAX_NODE_PER_GRID_CELL: usize = 1024;
 
 fn configure(
     window: &Window,
@@ -118,9 +86,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut config = configure(&window, &surface, &adapter, &device);
     let work_group_count = ((NUM_PARTICLES as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
     println!("data & buffers");
-    let app_state_buffer = get_app_state_buffer(&device);
+    let app_state_buffer = AppState::get_buffer(&device);
     let particle_counter = ParticleCounter::new(&device);
-    let grid_counter = GridCounter::new(&device);
+    // let grid_counter = GridCounter::new(&device);
     let mut particle_buffers = Vec::<wgpu::Buffer>::new();
     let mut screen_buffers = Vec::<wgpu::Buffer>::new();
     let mut initial_particle_data = vec![0.0f32; (PARTICLE_SIZE * NUM_PARTICLES) as usize];
@@ -156,6 +124,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             }),
         );
     }
+    let compute_grid_reset = ComputeGridReset::new(&device);
+    let compute_grid_update = ComputeGridUpdate::new(&device);
     println!("setup render pipeline");
     let shader = get_render_shader(&device);
     let render_bind_group_layout = get_render_bind_group_layout(&device);
@@ -173,7 +143,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     println!("setup compute pipeline");
     let (compute_pipeline, compute_bind_groups) = get_compute_stuff(
         &device,
-        &grid_counter,
+        &compute_grid_reset,
         &particle_counter,
         &screen_buffers,
         &particle_buffers,
@@ -196,7 +166,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &compute_bind_groups,
         work_group_count,
         &particle_counter,
-        &grid_counter,
+        &compute_grid_reset,
     );
 }
 
