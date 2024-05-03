@@ -20,7 +20,6 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   if (idx >= total) {
     return;
   }
-  let grid_cell_count_side = 64;
   let diam_sqrd = sp.diameter*sp.diameter;
   var n1 = nis[idx];
   let zoom = 0.05;
@@ -35,13 +34,14 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   if ( distance(c, n1.p) > 0.4) {
     dv += gravity;
   }
-  let gridx = max(0, min(i32(floor(n1.p.x / sp.diameter)) + grid_cell_count_side/2, grid_cell_count_side-1));
-  let gridy = max(0, min(i32(floor(n1.p.y / sp.diameter)) + grid_cell_count_side/2, grid_cell_count_side-1));
-  for (var a = max(0, gridx-1); a < min(gridx+2, 1024) ; a++) {
-    for (var b = max(0, gridy-1); b < min(gridy+2, 1024) ; b++) {
+
+  let gp = get_grid_coord(n1.p);
+  
+  for (var a = max(0, gp.x-1); a < min(gp.x+2, MAX_NODE_PER_GRID_CELL) ; a++) {
+    for (var b = max(0, gp.y-1); b < min(gp.y+2, MAX_NODE_PER_GRID_CELL) ; b++) {
       let grididx = a + b * grid_cell_count_side;
       for (var i = 0; i < grid_counter[grididx] ; i++) {
-        let idx2 = grid_list[ grididx * 1024 + i ];
+        let idx2 = grid_list[ grididx * MAX_NODE_PER_GRID_CELL + i ];
         var n2 = nis[idx2];
         let d_sqrd = distance_sqrd(n1.p, n2.p);
         if d_sqrd <= diam_sqrd && u32(idx2) != idx {

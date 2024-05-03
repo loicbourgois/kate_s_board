@@ -15,13 +15,11 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   if (idx >= total) {
     return;
   }
-  let grid_cell_count_side = 64;
   var n1 = nis[idx];
   let p = n1.p;
-  let gridx = max(0, min(i32(floor(p.x / sp.diameter)) + grid_cell_count_side/2, grid_cell_count_side-1));
-  let gridy = max(0, min(i32(floor(p.y / sp.diameter)) + grid_cell_count_side/2, grid_cell_count_side-1));
-  let grididx = gridx + gridy * grid_cell_count_side;
+  let gp = get_grid_coord(p);
+  let grididx = min(gp.x + gp.y * grid_cell_count_side, grid_cell_count_side*grid_cell_count_side-1);
   let aa = atomicAdd(&grid_counter[grididx], 1);
-  let grid_list_idx = grididx * 1024 + (aa % 1024);
+  let grid_list_idx = grididx * MAX_NODE_PER_GRID_CELL + (aa % MAX_NODE_PER_GRID_CELL);
   grid_list[grid_list_idx] = i32(idx);
 }

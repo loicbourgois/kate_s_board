@@ -1,3 +1,4 @@
+use crate::DIAMETER;
 use crate::NUM_PARTICLES;
 use crate::WINDOW_HEIGHT;
 use crate::WINDOW_WIDTH;
@@ -35,7 +36,7 @@ impl Default for AppState {
             window_width: WINDOW_WIDTH as f32,
             window_height: WINDOW_HEIGHT as f32,
             num_particles: NUM_PARTICLES as i32,
-            diameter: 0.02,
+            diameter: DIAMETER,
         }
     }
 }

@@ -34,13 +34,14 @@ use wgpu::SurfaceConfiguration;
 use winit::event_loop::EventLoop;
 use winit::window::Window;
 
-const NUM_PARTICLES: usize = 1024 * 16;
+const NUM_PARTICLES: usize = 1024 * 16 * 2;
 const PARTICLE_SIZE: usize = 4;
 const PARTICLES_PER_GROUP: u32 = 64;
 const WINDOW_WIDTH: usize = 512;
 const WINDOW_HEIGHT: usize = 512;
-const MAX_NODE_PER_GRID_CELL: usize = 1024;
+const MAX_NODE_PER_GRID_CELL: usize = 1024 * 8;
 const GRID_CELL_COUNT_SIDE: usize = 64;
+const DIAMETER: f32 = 0.01;
 
 fn configure(
     window: &Window,

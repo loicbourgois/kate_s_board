@@ -4,6 +4,7 @@ use crate::particle_counter::ParticleCounter;
 use crate::render::render_setup_pass;
 use crate::ComputeGridReset;
 use crate::ComputeGridUpdate;
+use crate::MAX_NODE_PER_GRID_CELL;
 use std::time::Instant;
 use wgpu::Adapter;
 use wgpu::BindGroup;
@@ -89,14 +90,22 @@ pub fn run_event_loop(
                             |zoop| match zoop {
                                 Ok(view) => {
                                     let mut max_ = 0;
+                                    let mut max_id = 0;
                                     let data: &[u32; 64 * 64] = bytemuck::from_bytes(&view);
                                     let mut s = 0;
-                                    for x in *data {
+                                    for (i, x_) in (data).iter().enumerate() {
+                                        let x = *x_;
                                         s += x;
+                                        if x > max_ {
+                                            max_ = x;
+                                            max_id = i;
+                                        }
                                         max_ = max_.max(x);
                                     }
                                     println!("particle_count_2: {:?}", s);
-                                    println!("  max: {:?}", max_);
+                                    println!("  max: {:?}/{}", max_, MAX_NODE_PER_GRID_CELL);
+                                    println!("  idx: {:?}", max_id);
+                                    // println!("  lendata: {:?}", data.len());
                                 }
                                 Err(_) => {}
                             },
