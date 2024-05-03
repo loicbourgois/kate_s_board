@@ -1,3 +1,4 @@
+use crate::GRID_CELL_COUNT_SIDE;
 use crate::MAX_NODE_PER_GRID_CELL;
 use std::borrow::Cow;
 use std::mem;
@@ -11,8 +12,6 @@ use wgpu::CommandEncoder;
 use wgpu::ComputePipeline;
 use wgpu::Device;
 use wgpu::ShaderModule;
-
-const GRID_CELL_COUNT_SIDE: usize = 64;
 
 pub struct ComputeGridReset {
     pub counter_buffer: Buffer,

@@ -88,12 +88,15 @@ pub fn run_event_loop(
                             &compute_grid_reset.counter_buffer.slice(0..4 * 64 * 64),
                             |zoop| match zoop {
                                 Ok(view) => {
+                                    let mut max_ = 0;
                                     let data: &[u32; 64 * 64] = bytemuck::from_bytes(&view);
                                     let mut s = 0;
                                     for x in *data {
                                         s += x;
+                                        max_ = max_.max(x);
                                     }
                                     println!("particle_count_2: {:?}", s);
+                                    println!("  max: {:?}", max_);
                                 }
                                 Err(_) => {}
                             },

@@ -1,12 +1,14 @@
 use crate::app_state::AppState;
 use crate::particle_counter::ParticleCounter;
 use crate::ComputeGridReset;
+use crate::GridList;
 use crate::NUM_PARTICLES;
 use crate::PARTICLE_SIZE;
 use crate::WINDOW_HEIGHT;
 use crate::WINDOW_WIDTH;
 use std::borrow::Cow;
 use std::mem;
+use std::num::NonZeroU64;
 use wgpu::BindGroup;
 use wgpu::Buffer;
 use wgpu::CommandEncoder;
@@ -20,6 +22,7 @@ pub fn get_compute_stuff(
     screen_buffers: &Vec<Buffer>,
     particle_buffers: &Vec<Buffer>,
     app_state_buffer: &Buffer,
+    grid_list: &GridList,
 ) -> (ComputePipeline, Vec<BindGroup>) {
     let source = include_str!("compute_1.wgsl").replace("{common}", include_str!("common.wgsl"));
     let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -91,7 +94,26 @@ pub fn get_compute_stuff(
                 },
                 particle_counter.bind_group_layout_entries[0],
                 particle_counter.bind_group_layout_entries[1],
-                compute_grid_reset.compute_bind_group_layout_entry,
+                wgpu::BindGroupLayoutEntry {
+                    binding: 7,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: compute_grid_reset.min_binding_size,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: grid_list.binding,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: grid_list.min_binding_size,
+                    },
+                    count: None,
+                },
             ],
             label: None,
         });
@@ -137,6 +159,10 @@ pub fn get_compute_stuff(
                 wgpu::BindGroupEntry {
                     binding: compute_grid_reset.counter_binding,
                     resource: compute_grid_reset.counter_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: grid_list.binding,
+                    resource: grid_list.buffer.as_entire_binding(),
                 },
             ],
             label: None,

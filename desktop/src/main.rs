@@ -11,6 +11,7 @@ use crate::app_state::AppState;
 use crate::compute_1::get_compute_stuff;
 use crate::compute_grid_reset::ComputeGridReset;
 use crate::compute_grid_update::ComputeGridUpdate;
+use crate::data::grid_list::GridList;
 use crate::data::nodes::Nodes;
 use crate::main_loop::run_event_loop;
 use crate::misc::get_device_queue;
@@ -39,6 +40,7 @@ const PARTICLES_PER_GROUP: u32 = 64;
 const WINDOW_WIDTH: usize = 512;
 const WINDOW_HEIGHT: usize = 512;
 const MAX_NODE_PER_GRID_CELL: usize = 1024;
+const GRID_CELL_COUNT_SIDE: usize = 64;
 
 fn configure(
     window: &Window,
@@ -105,14 +107,17 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             }),
         );
     }
-    let compute_grid_reset = ComputeGridReset::new(&device);
     let nodes = Nodes::new(&device);
+    let grid_list = GridList::new(&device);
+    // shaders
+    let compute_grid_reset = ComputeGridReset::new(&device);
     let compute_grid_update = ComputeGridUpdate::new(
         &device,
         &nodes,
         &app_state_buffer,
         &compute_grid_reset,
         work_group_count,
+        &grid_list,
     );
     println!("setup render pipeline");
     let shader = get_render_shader(&device);
@@ -135,6 +140,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &screen_buffers,
         &nodes.buffers,
         &app_state_buffer,
+        &grid_list,
     );
     run_event_loop(
         event_loop,

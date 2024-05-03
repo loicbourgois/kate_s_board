@@ -1,4 +1,5 @@
 use crate::ComputeGridReset;
+use crate::GridList;
 use crate::Nodes;
 use crate::MAX_NODE_PER_GRID_CELL;
 use crate::NUM_PARTICLES;
@@ -37,6 +38,7 @@ impl ComputeGridUpdate {
         app_state_buffer: &Buffer,
         compute_grid_reset: &ComputeGridReset,
         work_group_count: u32,
+        grid_list: &GridList,
     ) -> ComputeGridUpdate {
         let mut data: Vec<i32> = Vec::new();
         for _ in 0..GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE * MAX_NODE_PER_GRID_CELL {
@@ -99,6 +101,16 @@ impl ComputeGridUpdate {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: grid_list.binding,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: grid_list.min_binding_size,
+                    },
+                    count: None,
+                },
             ],
             label: None,
         });
@@ -114,8 +126,12 @@ impl ComputeGridUpdate {
                     resource: nodes.buffers[0].as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 7,
+                    binding: compute_grid_reset.counter_binding,
                     resource: compute_grid_reset.counter_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: grid_list.binding,
+                    resource: grid_list.buffer.as_entire_binding(),
                 },
             ],
             label: None,
