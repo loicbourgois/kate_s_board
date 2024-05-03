@@ -3,6 +3,7 @@ use crate::compute_1::compute_setup_pass;
 use crate::particle_counter::ParticleCounter;
 use crate::render::render_setup_pass;
 use crate::ComputeGridReset;
+use crate::ComputeGridUpdate;
 use std::time::Instant;
 use wgpu::Adapter;
 use wgpu::BindGroup;
@@ -38,6 +39,7 @@ pub fn run_event_loop(
     work_group_count: u32,
     particle_counter: &ParticleCounter,
     compute_grid_reset: &ComputeGridReset,
+    compute_grid_update: &ComputeGridUpdate,
 ) {
     let mut state = Some(AppState::default());
     let mut frame_num = 0;
@@ -118,6 +120,7 @@ pub fn run_event_loop(
                                 label: None,
                             });
                         compute_grid_reset.setup_encoder(&mut encoder);
+                        compute_grid_update.setup_encoder(&mut encoder);
                         compute_setup_pass(
                             &mut encoder,
                             compute_pipeline,

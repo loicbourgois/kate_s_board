@@ -1,3 +1,4 @@
+use crate::Nodes;
 use crate::NUM_PARTICLES;
 use crate::PARTICLE_SIZE;
 use crate::WINDOW_HEIGHT;
@@ -75,18 +76,6 @@ pub fn get_render_bind_group_layout(device: &Device) -> BindGroupLayout {
                 count: None,
             },
             wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Storage { read_only: true },
-                    has_dynamic_offset: false,
-                    min_binding_size: wgpu::BufferSize::new(
-                        (NUM_PARTICLES * PARTICLE_SIZE * 4) as _,
-                    ),
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
                 binding: 2,
                 visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
@@ -106,7 +95,6 @@ pub fn get_render_bind_group(
     device: &Device,
     bind_group_layout: &BindGroupLayout,
     app_state_buffer: &Buffer,
-    particle_buffers: &Vec<Buffer>,
     screen_buffers: &Vec<Buffer>,
 ) -> Vec<BindGroup> {
     let mut bds = Vec::new();
@@ -117,15 +105,7 @@ pub fn get_render_bind_group(
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                        buffer: &app_state_buffer,
-                        offset: 0,
-                        size: None,
-                    }),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: particle_buffers[i].as_entire_binding(),
+                    resource: app_state_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,

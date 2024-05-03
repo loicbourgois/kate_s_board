@@ -11,6 +11,7 @@ use crate::app_state::AppState;
 use crate::compute_1::get_compute_stuff;
 use crate::compute_grid_reset::ComputeGridReset;
 use crate::compute_grid_update::ComputeGridUpdate;
+use crate::data::nodes::Nodes;
 use crate::main_loop::run_event_loop;
 use crate::misc::get_device_queue;
 use crate::misc::get_gpu_adapter;
@@ -88,28 +89,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     println!("data & buffers");
     let app_state_buffer = AppState::get_buffer(&device);
     let particle_counter = ParticleCounter::new(&device);
-    // let grid_counter = GridCounter::new(&device);
-    let mut particle_buffers = Vec::<wgpu::Buffer>::new();
     let mut screen_buffers = Vec::<wgpu::Buffer>::new();
-    let mut initial_particle_data = vec![0.0f32; (PARTICLE_SIZE * NUM_PARTICLES) as usize];
-    let mut rng = WyRand::new_seed(42);
-    let mut unif = || rng.generate::<f32>();
-    for x in initial_particle_data.chunks_mut(PARTICLE_SIZE) {
-        x[0] = unif() * 0.9;
-        x[1] = unif() * 0.9;
-        x[2] = x[0];
-        x[3] = x[1];
-    }
     for i in 0..2 {
-        particle_buffers.push(
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("Particle Buffer {i}")),
-                contents: bytemuck::cast_slice(&initial_particle_data),
-                usage: wgpu::BufferUsages::VERTEX
-                    | wgpu::BufferUsages::STORAGE
-                    | wgpu::BufferUsages::COPY_DST,
-            }),
-        );
         let mut v_: Vec<f32> = Vec::new();
         for _ in 0..(WINDOW_WIDTH * WINDOW_HEIGHT * 16) {
             v_.push(0.0);
@@ -125,7 +106,14 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         );
     }
     let compute_grid_reset = ComputeGridReset::new(&device);
-    let compute_grid_update = ComputeGridUpdate::new(&device);
+    let nodes = Nodes::new(&device);
+    let compute_grid_update = ComputeGridUpdate::new(
+        &device,
+        &nodes,
+        &app_state_buffer,
+        &compute_grid_reset,
+        work_group_count,
+    );
     println!("setup render pipeline");
     let shader = get_render_shader(&device);
     let render_bind_group_layout = get_render_bind_group_layout(&device);
@@ -133,7 +121,6 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &device,
         &render_bind_group_layout,
         &app_state_buffer,
-        &particle_buffers,
         &screen_buffers,
     );
     let render_pipeline_layout = get_render_pipeline_layout(&device, &render_bind_group_layout);
@@ -146,7 +133,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &compute_grid_reset,
         &particle_counter,
         &screen_buffers,
-        &particle_buffers,
+        &nodes.buffers,
         &app_state_buffer,
     );
     run_event_loop(
@@ -167,6 +154,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         work_group_count,
         &particle_counter,
         &compute_grid_reset,
+        &compute_grid_update,
     );
 }
 

@@ -1,6 +1,7 @@
 use crate::MAX_NODE_PER_GRID_CELL;
 use std::borrow::Cow;
 use std::mem;
+use std::num::NonZeroU64;
 use wgpu::util::DeviceExt;
 use wgpu::BindGroup;
 use wgpu::BindGroupLayout;
@@ -21,6 +22,7 @@ pub struct ComputeGridReset {
     pub counter_binding: u32,
     pub compute_bind_group_layout: BindGroupLayout,
     pub compute_bind_group_layout_entry: BindGroupLayoutEntry,
+    pub min_binding_size: Option<NonZeroU64>,
 }
 
 impl ComputeGridReset {
@@ -43,15 +45,15 @@ impl ComputeGridReset {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&shader_reset_source)),
         });
+        let min_binding_size = wgpu::BufferSize::new((data_1.len() * mem::size_of::<i32>()) as _);
+        let counter_binding = 7;
         let compute_bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
-            binding: 7,
+            binding: counter_binding,
             visibility: wgpu::ShaderStages::COMPUTE,
             ty: wgpu::BindingType::Buffer {
                 ty: wgpu::BufferBindingType::Storage { read_only: false },
                 has_dynamic_offset: false,
-                min_binding_size: wgpu::BufferSize::new(
-                    (data_1.len() * mem::size_of::<i32>()) as _,
-                ),
+                min_binding_size: min_binding_size,
             },
             count: None,
         };
@@ -60,11 +62,10 @@ impl ComputeGridReset {
                 entries: &[compute_bind_group_layout_entry],
                 label: None,
             });
-
         let compute_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &compute_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
-                binding: 7,
+                binding: counter_binding,
                 resource: counter_buffer.as_entire_binding(),
             }],
             label: None,
@@ -87,9 +88,10 @@ impl ComputeGridReset {
             shader_reset,
             compute_pipeline,
             compute_bind_group,
-            counter_binding: 7,
+            counter_binding,
             compute_bind_group_layout,
             compute_bind_group_layout_entry,
+            min_binding_size,
         }
     }
 
