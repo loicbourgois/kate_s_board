@@ -1,13 +1,8 @@
 use crate::GRID_CELL_COUNT_SIDE;
 use crate::MAX_NODE_PER_GRID_CELL;
-use crate::NUM_PARTICLES;
-use crate::PARTICLE_SIZE;
-use nanorand::Rng;
-use nanorand::WyRand;
 use std::mem;
 use std::num::NonZeroU64;
 use wgpu::util::DeviceExt;
-use wgpu::BindGroupLayoutEntry;
 use wgpu::Buffer;
 use wgpu::Device;
 
@@ -20,7 +15,7 @@ pub struct GridList {
 impl GridList {
     pub fn new(device: &Device) -> GridList {
         let binding = 8;
-        let mut data = vec![
+        let data = vec![
             0 as u32;
             (GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE * MAX_NODE_PER_GRID_CELL)
                 as usize

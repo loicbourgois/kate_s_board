@@ -1,4 +1,5 @@
 use crate::app_state::AppState;
+use crate::common::get_common;
 use crate::particle_counter::ParticleCounter;
 use crate::ComputeGridReset;
 use crate::GridList;
@@ -8,7 +9,6 @@ use crate::WINDOW_HEIGHT;
 use crate::WINDOW_WIDTH;
 use std::borrow::Cow;
 use std::mem;
-use std::num::NonZeroU64;
 use wgpu::BindGroup;
 use wgpu::Buffer;
 use wgpu::CommandEncoder;
@@ -24,7 +24,7 @@ pub fn get_compute_stuff(
     app_state_buffer: &Buffer,
     grid_list: &GridList,
 ) -> (ComputePipeline, Vec<BindGroup>) {
-    let source = include_str!("compute_1.wgsl").replace("{common}", include_str!("common.wgsl"));
+    let source = include_str!("compute_1.wgsl").replace("{common}", &get_common());
     let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: None,
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&source)),

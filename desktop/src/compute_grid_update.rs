@@ -1,9 +1,8 @@
+use crate::common::get_common;
 use crate::ComputeGridReset;
 use crate::GridList;
 use crate::Nodes;
 use crate::MAX_NODE_PER_GRID_CELL;
-use crate::NUM_PARTICLES;
-use crate::PARTICLE_SIZE;
 use std::borrow::Cow;
 use std::mem;
 use wgpu::util::DeviceExt;
@@ -52,8 +51,8 @@ impl ComputeGridUpdate {
                 | wgpu::BufferUsages::COPY_DST
                 | wgpu::BufferUsages::COPY_SRC,
         });
-        let shader_source = include_str!("compute_grid_update.wgsl")
-            .replace("{common}", include_str!("common.wgsl"));
+        let shader_source =
+            include_str!("compute_grid_update.wgsl").replace("{common}", &get_common());
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&shader_source)),
@@ -166,9 +165,7 @@ impl ComputeGridUpdate {
         });
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
+        // println!("eoirgj: {}", self.work_group_count);
         pass.dispatch_workgroups(self.work_group_count, 1, 1);
-        // cpass.set_pipeline(&compute_pipeline);
-        // cpass.set_bind_group(0, &compute_bind_groups[frame_num % 2], &[]);
-        // cpass.dispatch_workgroups(work_group_count, 1, 1);
     }
 }

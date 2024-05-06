@@ -1,5 +1,5 @@
+use crate::common::get_common;
 use crate::GRID_CELL_COUNT_SIDE;
-use crate::MAX_NODE_PER_GRID_CELL;
 use std::borrow::Cow;
 use std::mem;
 use std::num::NonZeroU64;
@@ -38,8 +38,8 @@ impl ComputeGridReset {
                 | wgpu::BufferUsages::COPY_DST
                 | wgpu::BufferUsages::COPY_SRC,
         });
-        let shader_reset_source = include_str!("compute_grid_reset.wgsl")
-            .replace("{common}", include_str!("common.wgsl"));
+        let shader_reset_source =
+            include_str!("compute_grid_reset.wgsl").replace("{common}", &get_common());
         let shader_reset = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&shader_reset_source)),
@@ -101,6 +101,10 @@ impl ComputeGridReset {
         });
         pass.set_pipeline(&self.compute_pipeline);
         pass.set_bind_group(0, &self.compute_bind_group, &[]);
-        pass.dispatch_workgroups(64, 1, 1);
+        pass.dispatch_workgroups(
+            (GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE / 64) as u32,
+            1,
+            1,
+        );
     }
 }

@@ -1,6 +1,9 @@
 mod app_state;
+mod common;
+mod compute;
 mod compute_1;
 mod compute_grid_reset;
+use crate::compute::clear_screen::ComputeClearScreen;
 mod compute_grid_update;
 mod data;
 mod main_loop;
@@ -24,8 +27,6 @@ use crate::render::get_render_bind_group_layout;
 use crate::render::get_render_pipeline;
 use crate::render::get_render_pipeline_layout;
 use crate::render::get_render_shader;
-use nanorand::Rng;
-use nanorand::WyRand;
 use wgpu::util::DeviceExt;
 use wgpu::Adapter;
 use wgpu::Device;
@@ -34,13 +35,14 @@ use wgpu::SurfaceConfiguration;
 use winit::event_loop::EventLoop;
 use winit::window::Window;
 
-const NUM_PARTICLES: usize = 1024 * 16 * 2;
+const NUM_PARTICLE_SQRT: usize = 317;
+const NUM_PARTICLES: usize = NUM_PARTICLE_SQRT * NUM_PARTICLE_SQRT;
 const PARTICLE_SIZE: usize = 4;
 const PARTICLES_PER_GROUP: u32 = 64;
-const WINDOW_WIDTH: usize = 512;
-const WINDOW_HEIGHT: usize = 512;
-const MAX_NODE_PER_GRID_CELL: usize = 1024 * 8;
-const GRID_CELL_COUNT_SIDE: usize = 64;
+const WINDOW_WIDTH: usize = 2000;
+const WINDOW_HEIGHT: usize = 2000;
+const MAX_NODE_PER_GRID_CELL: usize = 128;
+const GRID_CELL_COUNT_SIDE: usize = 512;
 const DIAMETER: f32 = 0.01;
 
 fn configure(
@@ -93,9 +95,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let app_state_buffer = AppState::get_buffer(&device);
     let particle_counter = ParticleCounter::new(&device);
     let mut screen_buffers = Vec::<wgpu::Buffer>::new();
-    for i in 0..2 {
+    for _ in 0..2 {
         let mut v_: Vec<f32> = Vec::new();
-        for _ in 0..(WINDOW_WIDTH * WINDOW_HEIGHT * 16) {
+        for _ in 0..(WINDOW_WIDTH * WINDOW_HEIGHT * 4) {
             v_.push(0.0);
         }
         screen_buffers.push(
@@ -112,6 +114,15 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let grid_list = GridList::new(&device);
     // shaders
     let compute_grid_reset = ComputeGridReset::new(&device);
+    let screen_buffer_binding = 4;
+    let screen_buffer_min_binding_size =
+        wgpu::BufferSize::new((WINDOW_WIDTH * WINDOW_HEIGHT * 4) as _);
+    let compute_clear_screen = ComputeClearScreen::new(
+        &device,
+        screen_buffer_min_binding_size,
+        screen_buffer_binding,
+        &screen_buffers,
+    );
     let compute_grid_update = ComputeGridUpdate::new(
         &device,
         &nodes,
@@ -162,6 +173,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         &particle_counter,
         &compute_grid_reset,
         &compute_grid_update,
+        &compute_clear_screen,
     );
 }
 

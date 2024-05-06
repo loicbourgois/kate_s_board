@@ -2,7 +2,6 @@
 
 
 @group(0) @binding(0) var<uniform> app_state: AppState;
-// @group(0) @binding(1) var<storage, read> nodes : array<Node>;
 @group(0) @binding(2) var<storage, read> screen : array<f32>;
 
 
@@ -31,8 +30,8 @@ fn fs_main(vsOut: VSOutput) -> @location(0) vec4<f32> {
     let min_dim = min(app_state.window_width, app_state.window_height);
     let idx = i32(vsOut.position.x) + i32(vsOut.position.y) * 1600;
     return vec4<f32>(
-        screen[idx],
-        0.0, 
+        screen[idx]*0.25,
+        screen[idx]*0.25,
         0.0,
         1.0
     );

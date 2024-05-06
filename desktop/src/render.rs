@@ -1,6 +1,4 @@
-use crate::Nodes;
-use crate::NUM_PARTICLES;
-use crate::PARTICLE_SIZE;
+use crate::common::get_common;
 use crate::WINDOW_HEIGHT;
 use crate::WINDOW_WIDTH;
 use std::borrow::Cow;
@@ -43,7 +41,7 @@ pub fn get_render_pipeline(
 }
 
 pub fn get_render_shader(device: &Device) -> ShaderModule {
-    let source = include_str!("render.wgsl").replace("{common}", include_str!("common.wgsl"));
+    let source = include_str!("render.wgsl").replace("{common}", &get_common());
     device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: None,
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&source)),
