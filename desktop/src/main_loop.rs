@@ -36,9 +36,9 @@ pub fn run_event_loop(
     window: &Window,
     config: &mut SurfaceConfiguration,
     app_state_buffer: &Buffer,
-    render_bind_groups: &Vec<BindGroup>,
+    render_bind_groups: &[BindGroup],
     compute_pipeline: &ComputePipeline,
-    compute_bind_groups: &Vec<BindGroup>,
+    compute_bind_groups: &[BindGroup],
     work_group_count: u32,
     particle_counter: &ParticleCounter,
     compute_grid_reset: &ComputeGridReset,
@@ -46,7 +46,7 @@ pub fn run_event_loop(
     compute_clear_screen: &ComputeClearScreen,
 ) {
     let mut state = Some(AppState::default());
-    let mut frame_num = 0;
+    let mut step = 0;
     let mut frame_start = Instant::now();
     event_loop
         .run(move |event, target| {
@@ -62,21 +62,21 @@ pub fn run_event_loop(
                         config.height = new_size.height.max(1);
                         state.as_mut().unwrap().window_height = config.height as f32;
                         state.as_mut().unwrap().window_width = config.width as f32;
-                        surface.configure(&device, &config);
+                        surface.configure(device, config);
                         // On macos the window needs to be redrawn manually after resizing
                         window.request_redraw();
                         println!("window width:  {}", config.width);
                         println!("window height: {}", config.height);
                     }
                     WindowEvent::RedrawRequested => {
-                        println!("# frame #{}", frame_num);
+                        println!("# step #{}", step);
                         let elapsed = frame_start.elapsed().as_millis();
                         println!("elapsed: {}", elapsed);
                         frame_start = Instant::now();
                         wgpu::util::DownloadBuffer::read_buffer(
-                            &device,
-                            &queue,
-                            &particle_counter.buffers[(frame_num + 1) % 2].slice(..),
+                            device,
+                            queue,
+                            &particle_counter.buffers[step % 2].slice(..),
                             |zoop| match zoop {
                                 Ok(view) => {
                                     let result: &[u32; 1] = bytemuck::from_bytes(&view);
@@ -86,8 +86,8 @@ pub fn run_event_loop(
                             },
                         );
                         wgpu::util::DownloadBuffer::read_buffer(
-                            &device,
-                            &queue,
+                            device,
+                            queue,
                             &compute_grid_reset
                                 .counter_buffer
                                 .slice(0..(4 * GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE) as u64),
@@ -121,7 +121,7 @@ pub fn run_event_loop(
                         );
                         let state_ref = state.as_ref().unwrap();
                         queue.write_buffer(
-                            &app_state_buffer,
+                            app_state_buffer,
                             0,
                             &state_ref.as_wgsl_bytes().expect(
                                 "Error in encase translating AppState struct to WGSL bytes.",
@@ -131,17 +131,17 @@ pub fn run_event_loop(
                             device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                                 label: None,
                             });
-                        for _ in 0..5 {
-                            frame_num += 1;
+                        for _ in 0..10 {
+                            step += 1;
                             compute_grid_reset.setup_encoder(&mut encoder);
                             compute_grid_update.setup_encoder(&mut encoder);
-                            compute_clear_screen.setup_pass(&mut encoder, frame_num);
+                            compute_clear_screen.setup_pass(&mut encoder, step);
                             compute_setup_pass(
                                 &mut encoder,
                                 compute_pipeline,
                                 compute_bind_groups,
                                 work_group_count,
-                                frame_num,
+                                step,
                             );
                         }
                         let frame = surface
@@ -155,7 +155,7 @@ pub fn run_event_loop(
                             &view,
                             render_pipeline,
                             render_bind_groups,
-                            frame_num,
+                            step,
                         );
                         queue.submit(Some(encoder.finish()));
                         frame.present();

@@ -1,5 +1,5 @@
 use crate::app_state::AppState;
-use crate::common::get_common;
+use crate::compute::common::get_common;
 use crate::particle_counter::ParticleCounter;
 use crate::ComputeGridReset;
 use crate::GridList;
@@ -19,8 +19,8 @@ pub fn get_compute_stuff(
     device: &Device,
     compute_grid_reset: &ComputeGridReset,
     particle_counter: &ParticleCounter,
-    screen_buffers: &Vec<Buffer>,
-    particle_buffers: &Vec<Buffer>,
+    screen_buffers: &[Buffer],
+    particle_buffers: &[Buffer],
     app_state_buffer: &Buffer,
     grid_list: &GridList,
 ) -> (ComputePipeline, Vec<BindGroup>) {
@@ -174,21 +174,21 @@ pub fn get_compute_stuff(
         module: &compute_shader,
         entry_point: "main",
     });
-    return (compute_pipeline, compute_bind_groups);
+    (compute_pipeline, compute_bind_groups)
 }
 
 pub fn compute_setup_pass(
     encoder: &mut CommandEncoder,
     compute_pipeline: &ComputePipeline,
-    compute_bind_groups: &Vec<BindGroup>,
+    compute_bind_groups: &[BindGroup],
     work_group_count: u32,
-    frame_num: usize,
+    step: usize,
 ) {
     let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
         label: None,
         timestamp_writes: None,
     });
-    cpass.set_pipeline(&compute_pipeline);
-    cpass.set_bind_group(0, &compute_bind_groups[frame_num % 2], &[]);
+    cpass.set_pipeline(compute_pipeline);
+    cpass.set_bind_group(0, &compute_bind_groups[step % 2], &[]);
     cpass.dispatch_workgroups(work_group_count, 1, 1);
 }

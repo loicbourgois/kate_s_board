@@ -15,8 +15,7 @@ impl ParticleCounter {
         let mut buffers = Vec::<wgpu::Buffer>::new();
         let mut bind_group_layout_entries = Vec::<wgpu::BindGroupLayoutEntry>::new();
         for i in 0..2 {
-            let mut data: Vec<i32> = Vec::new();
-            data.push(0);
+            let data: Vec<i32> = vec![0];
             buffers.push(
                 device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("particle_counter_buffer"),

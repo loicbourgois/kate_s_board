@@ -1,4 +1,4 @@
-use crate::common::get_common;
+use crate::compute::common::get_common;
 use crate::WINDOW_HEIGHT;
 use crate::WINDOW_WIDTH;
 use std::borrow::Cow;
@@ -22,14 +22,14 @@ pub fn get_render_pipeline(
 ) -> RenderPipeline {
     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: None,
-        layout: Some(&pipeline_layout),
+        layout: Some(pipeline_layout),
         vertex: wgpu::VertexState {
-            module: &shader,
+            module: shader,
             entry_point: "vs_main",
             buffers: &[],
         },
         fragment: Some(wgpu::FragmentState {
-            module: &shader,
+            module: shader,
             entry_point: "fs_main",
             targets: &[Some(swapchain_format.into())],
         }),
@@ -93,13 +93,13 @@ pub fn get_render_bind_group(
     device: &Device,
     bind_group_layout: &BindGroupLayout,
     app_state_buffer: &Buffer,
-    screen_buffers: &Vec<Buffer>,
+    screen_buffers: &[Buffer],
 ) -> Vec<BindGroup> {
     let mut bds = Vec::new();
     for i in 0..2 {
         bds.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
-            layout: &bind_group_layout,
+            layout: bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -119,13 +119,13 @@ pub fn render_setup_pass(
     encoder: &mut CommandEncoder,
     view: &TextureView,
     render_pipeline: &RenderPipeline,
-    render_bind_groups: &Vec<BindGroup>,
-    frame_num: usize,
+    render_bind_groups: &[BindGroup],
+    step: usize,
 ) {
     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: None,
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view: &view,
+            view,
             resolve_target: None,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
@@ -136,7 +136,7 @@ pub fn render_setup_pass(
         timestamp_writes: None,
         occlusion_query_set: None,
     });
-    rpass.set_pipeline(&render_pipeline);
-    rpass.set_bind_group(0, &render_bind_groups[frame_num % 2], &[]);
+    rpass.set_pipeline(render_pipeline);
+    rpass.set_bind_group(0, &render_bind_groups[step % 2], &[]);
     rpass.draw(0..6, 0..1);
 }

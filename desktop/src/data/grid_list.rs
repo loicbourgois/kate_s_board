@@ -15,13 +15,10 @@ pub struct GridList {
 impl GridList {
     pub fn new(device: &Device) -> GridList {
         let binding = 8;
-        let data = vec![
-            0 as u32;
-            (GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE * MAX_NODE_PER_GRID_CELL)
-                as usize
-        ];
+        let data =
+            vec![0_u32; GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE * MAX_NODE_PER_GRID_CELL];
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("particle buffer in")),
+            label: Some("particle buffer in"),
             contents: bytemuck::cast_slice(&data),
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE

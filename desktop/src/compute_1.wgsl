@@ -15,7 +15,7 @@ struct NodeDraw {
     d_sqrd: i32
 };
 fn node_draw(p: vec2<f32>, window_width: f32, min_dim: f32, window_height: f32 ) -> NodeDraw {
-  let zoom = 0.3;
+  let zoom = 0.025;
   let cf = p * zoom + vec2f(0.5 * window_width / min_dim, 0.5 * window_height / min_dim) ;
   let af = cf - vec2f(diameter, diameter) * 0.9 * zoom;
   let bf = cf + vec2f(diameter, diameter) * 0.9 * zoom;
@@ -34,16 +34,16 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     return;
   }
   let min_dim = min(sp.window_width, sp.window_height);
+  let width = i32(sp.window_width);
+  let height = i32(sp.window_height);
   let diam_sqrd = sp.diameter*sp.diameter;
   var n1 = nis[idx];
   var dv = vec2<f32>(0.0, 0.0);
   var dp = vec2<f32>(0.0, 0.0);
   dv += n1.p - n1.pp;
   let c = vec2<f32>(0.0, 0.0);
-  let gravity = (c - n1.p) * 0.000003;
-  // if ( distance(c, n1.p) > 0.4) {
-    dv += gravity;
-  // }
+  let gravity = (c - n1.p) * 0.000003 * n1.m;
+  dv += gravity;
   let gp = get_grid_coord(n1.p);
   for (var a = max(0, gp.x-1); a < min(gp.x+2, GRID_CELL_COUNT_SIDE) ; a++) {
     for (var b = max(0, gp.y-1); b < min(gp.y+2, GRID_CELL_COUNT_SIDE) ; b++) {
@@ -55,17 +55,12 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
         if d_sqrd <= diam_sqrd && u32(idx2) != idx {
           let dist = sqrt(d_sqrd);
           let delta_position = delta(n1.p, n2.p);
-          let crdv = 6.0;
-          let crdp = 1.0;
-          let dd = dist - sp.diameter;
-          let dd_crdv = dd * crdv;
-          let crdp_crdv = crdp * crdv;
-          let u1 = delta_position.x * dd_crdv;
-          let u2 = delta_position.y * dd_crdv;
-          dv.x += u1;
-          dv.y += u2;
-          dp.x += u1 * crdp_crdv;
-          dp.y += u2 * crdp_crdv;
+          let dd = (dist - sp.diameter);
+          let crdv = 0.05;
+          let crdp = 0.05;
+          let dpn_dd = normalize(delta_position) * dd * n1.m / (n1.m + n2.m) * 2.0;
+          dv += dpn_dd * crdv ;
+          dp += dpn_dd * crdp;
         }
       }
     }
@@ -74,13 +69,13 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   nos[idx].pp = nos[idx].p;
   nos[idx].p += dv;
   let nd_2 = node_draw(nos[idx].p, sp.window_width, min_dim, sp.window_height);
-  for (var x = max(0, nd_2.a.x); x < min(nd_2.b.x, 1600) ; x++) {
-    for (var y = max(0, nd_2.a.y); y < min(nd_2.b.y, 1200) ; y++) {
-      let ip = x + y * 1600;
+  for (var x = max(0, nd_2.a.x); x < min(nd_2.b.x, width) ; x++) {
+    for (var y = max(0, nd_2.a.y); y < min(nd_2.b.y, height) ; y++) {
+      let ip = x + y * width;
       let d_ = nd_2.c - vec2(x,y);
       let dd = d_.x * d_.x + d_.y * d_.y;
       if (dd < nd_2.d_sqrd) { 
-        screen_buffer[ip] = 1.0;
+        screen_buffer[ip] = max(n1.m, screen_buffer[ip]);
       }
     }
   }

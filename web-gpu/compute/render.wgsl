@@ -1,16 +1,16 @@
-{common}
-
-
-@group(0) @binding(0) var<uniform> app_state: AppState;
-@group(0) @binding(2) var<storage, read> screen : array<f32>;
-
+struct GpuContext {
+    canvas: vec2f,
+    screen: vec2f,
+};
+@group(0) @binding(0) var<uniform> gpu_context : GpuContext;
+@group(0) @binding(4) var<storage, read> screen : array<f32>;
 
 struct VSOutput {
-  @builtin(position) position: vec4f,
+    @builtin(position) position: vec4f,
 };
 
 @vertex
-fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> VSOutput {
+fn vs(@builtin(vertex_index) in_vertex_index: u32) -> VSOutput {
     var vertices = array<vec2<f32>, 6>(
         vec2<f32>(-1.0, -1.0),
         vec2<f32>(1.0, 1.0),
@@ -26,9 +26,8 @@ fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> VSOutput {
 }
 
 @fragment
-fn fs_main(vsOut: VSOutput) -> @location(0) vec4<f32> {
-    let min_dim = min(app_state.window_width, app_state.window_height);
-    let width = i32(app_state.window_width);
+fn fs(vsOut: VSOutput) -> @location(0) vec4<f32> {
+    let width = i32(gpu_context.screen.x);
     let idx = i32(vsOut.position.x) + i32(vsOut.position.y) * width;
     return vec4<f32>(
         screen[idx],
@@ -36,5 +35,4 @@ fn fs_main(vsOut: VSOutput) -> @location(0) vec4<f32> {
         0.0,
         1.0
     );
-
 }

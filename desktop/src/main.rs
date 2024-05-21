@@ -1,19 +1,17 @@
 mod app_state;
-mod common;
 mod compute;
 mod compute_1;
 mod compute_grid_reset;
-use crate::compute::clear_screen::ComputeClearScreen;
-mod compute_grid_update;
 mod data;
 mod main_loop;
 mod misc;
 mod particle_counter;
 mod render;
 use crate::app_state::AppState;
+use crate::compute::clear_screen::ComputeClearScreen;
+use crate::compute::grid_update::ComputeGridUpdate;
 use crate::compute_1::get_compute_stuff;
 use crate::compute_grid_reset::ComputeGridReset;
-use crate::compute_grid_update::ComputeGridUpdate;
 use crate::data::grid_list::GridList;
 use crate::data::nodes::Nodes;
 use crate::main_loop::run_event_loop;
@@ -36,14 +34,15 @@ use winit::event_loop::EventLoop;
 use winit::window::Window;
 
 const NUM_PARTICLE_SQRT: usize = 317;
+// const NUM_PARTICLE_SQRT: usize = 31;
 const NUM_PARTICLES: usize = NUM_PARTICLE_SQRT * NUM_PARTICLE_SQRT;
-const PARTICLE_SIZE: usize = 4;
+const PARTICLE_SIZE: usize = 6;
 const PARTICLES_PER_GROUP: u32 = 64;
-const WINDOW_WIDTH: usize = 2000;
-const WINDOW_HEIGHT: usize = 2000;
+const WINDOW_WIDTH: usize = 4000;
+const WINDOW_HEIGHT: usize = 4000;
 const MAX_NODE_PER_GRID_CELL: usize = 128;
 const GRID_CELL_COUNT_SIDE: usize = 512;
-const DIAMETER: f32 = 0.01;
+const DIAMETER: f32 = 0.1;
 
 fn configure(
     window: &Window,
@@ -55,9 +54,9 @@ fn configure(
     size.width = size.width.max(1);
     size.height = size.height.max(1);
     let config = surface
-        .get_default_config(&adapter, size.width, size.height)
+        .get_default_config(adapter, size.width, size.height)
         .unwrap();
-    surface.configure(&device, &config);
+    surface.configure(device, &config);
     config
 }
 
@@ -96,10 +95,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let particle_counter = ParticleCounter::new(&device);
     let mut screen_buffers = Vec::<wgpu::Buffer>::new();
     for _ in 0..2 {
-        let mut v_: Vec<f32> = Vec::new();
-        for _ in 0..(WINDOW_WIDTH * WINDOW_HEIGHT * 4) {
-            v_.push(0.0);
-        }
+        let v_: Vec<f32> = vec![0.0; WINDOW_WIDTH * WINDOW_HEIGHT * 4];
+
         screen_buffers.push(
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("screen_buffer"),

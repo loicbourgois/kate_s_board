@@ -1,4 +1,4 @@
-use crate::common::get_common;
+use crate::compute::common::get_common;
 use std::borrow::Cow;
 use std::num::NonZeroU64;
 use wgpu::BindGroup;
@@ -17,7 +17,7 @@ impl ComputeClearScreen {
         device: &Device,
         screen_buffer_min_binding_size: Option<NonZeroU64>,
         screen_buffer_binding: u32,
-        screen_buffers: &Vec<Buffer>,
+        screen_buffers: &[Buffer],
     ) -> ComputeClearScreen {
         let source = include_str!("clear_screen.wgsl").replace("{common}", &get_common());
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -64,13 +64,13 @@ impl ComputeClearScreen {
             bind_groups,
         }
     }
-    pub fn setup_pass(&self, encoder: &mut CommandEncoder, frame_num: usize) {
+    pub fn setup_pass(&self, encoder: &mut CommandEncoder, step: usize) {
         let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: None,
             timestamp_writes: None,
         });
         cpass.set_pipeline(&self.pipeline);
-        cpass.set_bind_group(0, &self.bind_groups[frame_num % 2], &[]);
+        cpass.set_bind_group(0, &self.bind_groups[step % 2], &[]);
         cpass.dispatch_workgroups(2000 * 4000 / 256, 1, 1);
     }
 }

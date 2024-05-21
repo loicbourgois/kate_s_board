@@ -31,12 +31,14 @@ pub async fn get_gpu_adapter(instance: &Instance, surface: &Surface<'_>) -> Adap
 }
 
 pub async fn get_device_queue(adapter: &Adapter) -> (Device, Queue) {
+    let mut limits = wgpu::Limits::default().using_resolution(adapter.limits());
+    limits.max_storage_buffer_binding_size = 128 << 21;
     adapter
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default().using_resolution(adapter.limits()),
+                required_limits: limits,
             },
             None,
         )
@@ -45,6 +47,6 @@ pub async fn get_device_queue(adapter: &Adapter) -> (Device, Queue) {
 }
 
 pub fn get_swapchain_format(surface: &Surface, adapter: &Adapter) -> TextureFormat {
-    let swapchain_capabilities = surface.get_capabilities(&adapter);
+    let swapchain_capabilities = surface.get_capabilities(adapter);
     swapchain_capabilities.formats[0]
 }

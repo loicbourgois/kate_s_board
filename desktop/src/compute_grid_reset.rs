@@ -1,4 +1,4 @@
-use crate::common::get_common;
+use crate::compute::common::get_common;
 use crate::GRID_CELL_COUNT_SIDE;
 use std::borrow::Cow;
 use std::mem;
@@ -26,10 +26,7 @@ pub struct ComputeGridReset {
 
 impl ComputeGridReset {
     pub fn new(device: &Device) -> ComputeGridReset {
-        let mut data_1: Vec<i32> = Vec::new();
-        for _ in 0..GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE {
-            data_1.push(0);
-        }
+        let data_1 = vec![0; GRID_CELL_COUNT_SIDE * GRID_CELL_COUNT_SIDE];
         let counter_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("ComputeGridReset.list_buffer"),
             contents: bytemuck::cast_slice(&data_1),
@@ -52,7 +49,7 @@ impl ComputeGridReset {
             ty: wgpu::BindingType::Buffer {
                 ty: wgpu::BufferBindingType::Storage { read_only: false },
                 has_dynamic_offset: false,
-                min_binding_size: min_binding_size,
+                min_binding_size,
             },
             count: None,
         };
