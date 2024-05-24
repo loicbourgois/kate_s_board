@@ -86,6 +86,8 @@ async function main() {
         screen: screen,
         gpu_context: gpu_context,
         particle: particle,
+        grid: grid,
+        grid_counter: grid_counter,
     }))
     const pre_render = await (new PreRender({
         device: device,

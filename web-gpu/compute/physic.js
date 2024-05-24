@@ -24,6 +24,8 @@ class Physic {
                         entries: [
                             { binding: x.particle.bindings[0], resource: { buffer: x.particle.buffers[0] }},
                             { binding: x.particle.bindings[1], resource: { buffer: x.particle.buffers[1] }},
+                            { binding: x.grid.binding, resource: { buffer: x.grid.buffer }},
+                            { binding: x.grid_counter.binding, resource: { buffer: x.grid_counter.buffer }},
                         ],
                     }),
                     x.device.createBindGroup({
@@ -31,6 +33,8 @@ class Physic {
                         entries: [
                             { binding: x.particle.bindings[0], resource: { buffer: x.particle.buffers[1] }},
                             { binding: x.particle.bindings[1], resource: { buffer: x.particle.buffers[0] }},
+                            { binding: x.grid.binding, resource: { buffer: x.grid.buffer }},
+                            { binding: x.grid_counter.binding, resource: { buffer: x.grid_counter.buffer }},
                         ],
                     }),
                 ];
