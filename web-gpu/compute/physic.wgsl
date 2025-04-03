@@ -1,4 +1,5 @@
 {common}
+@group(0) @binding(0) var<uniform> gpu_context : GpuContext;
 @group(0) @binding(1) var<storage, read> particle : array<Particle>;
 @group(0) @binding(2) var<storage, read_write> particle2 : array<Particle>;
 @group(0) @binding(3) var<storage, read> grid : array<u32>;
@@ -7,16 +8,22 @@
 @workgroup_size(${workgroup_size})
 fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let total = arrayLength(&particle);
+    let diameter = gpu_context.diameter;
     let idx = global_invocation_id.x;
     if (idx >= total) {
         return;
     }
     let p1 = particle[idx];
     var dv = vec2<f32>(0.0, 0.0);
+    dv += p1.p - p1.pp;
+    let c = vec2<f32>(0.0, 0.0);
+    // let gravity = (c - p1.p) * 0.000003 * n1.m;
+    let gravity = (c - p1.p) * 0.000003 * 1.0;
+    dv += gravity;
     var dp = vec2<f32>(0.0, 0.0);
     let crdv = 0.05;
     let crdp = 0.05;
-    let gp = get_grid_coord(p1.p);
+    let gp = get_grid_coord(p1.p, diameter);
     let diam_sqrd = diameter * diameter;
     for (var a = max(0, gp.x-1); a < min(gp.x+2, GRID_CELL_COUNT_SIDE) ; a++) {
         for (var b = max(0, gp.y-1); b < min(gp.y+2, GRID_CELL_COUNT_SIDE) ; b++) {
@@ -38,6 +45,6 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
         }
     }
     particle2[idx].p = p1.p + dp ;
-    // particle2[idx].pp = particle2[idx].p;
+    particle2[idx].pp = particle2[idx].p;
     particle2[idx].p += dv;
 }

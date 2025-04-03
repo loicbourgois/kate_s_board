@@ -4,6 +4,7 @@
 @compute
 @workgroup_size(1)
 fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let diameter = gpu_context.diameter;
     let zoom = 0.1;
     let ps = array(
         vec2f(0.0, 0.0),

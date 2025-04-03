@@ -1,7 +1,7 @@
 class Particle {
     constructor (x) {
-        this.particle_count = 200
-        this.particle_size = 2
+        this.particle_count = 50000
+        this.particle_size = 4
         const size = this.particle_count * this.particle_size * 4
         const buffers = [
             x.device.createBuffer({
@@ -19,10 +19,13 @@ class Particle {
             new Float32Array(size / 4),
             new Float32Array(size / 4),
         ]
-        for (let i = 0; i < this.particle_count * this.particle_size; i++) {
+        for (let i = 0; i < this.particle_count ; i++) {
+            const aa = 100
+            const x = Math.random() * aa - aa*0.5
+            const y = Math.random() * aa - aa*0.5
             datas[0].set([
-                Math.random() * 9.0 - 4.5
-            ], i);
+                x, y, x, y
+            ], i*4);
         }
         x.device.queue.writeBuffer(buffers[0], 0, datas[0]);
         x.device.queue.writeBuffer(buffers[1], 0, datas[1]);

@@ -6,18 +6,19 @@
 @workgroup_size(${workgroup_size})
 fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let total = arrayLength(&particle);
+    let diameter = gpu_context.diameter;
     let idx = global_invocation_id.x;
     if (idx >= total) {
         return;
     }
     let p = particle[idx];
-    let zoom = 0.1;
+    let zoom = 0.01;
     let min_canvas_dim = min(gpu_context.canvas.x, gpu_context.canvas.y);
     let center = vec2(
         i32(gpu_context.canvas.x * 0.5 + p.p.x * min_canvas_dim*zoom),
         i32(gpu_context.canvas.y * 0.5 + p.p.y * min_canvas_dim*zoom),
     );
-    let diam2 = i32(diameter * min_canvas_dim * zoom ) ;
+    let diam2 = i32(diameter * min_canvas_dim * zoom  ) ;
     let i_min = center.x - diam2/2;
     let i_max = i_min + diam2;
     let j_min = center.y - diam2/2;
@@ -28,7 +29,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
             let idx = i + j * i32(gpu_context.screen.x);
             let d = vec2(i, j) - center;
             if ( d.x*d.x+d.y*d.y < diam2 * diam2 / 4 ) {
-                screen[idx] = 0.2;
+                screen[idx] = 1.0;
             }
             aa += 1;
         }

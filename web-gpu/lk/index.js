@@ -1,15 +1,15 @@
-import {ClearScreen} from "./compute/clear_screen.js"
-import {Screen} from "./data/screen.js"
-import {Render} from "./compute/render.js"
-import {GpuContext} from "./data/gpu_context.js"
-import { ColorTest } from "./compute/color_test.js";
-import { Particle } from "./data/particle.js";
-import { PreRender } from "./compute/pre_render.js";
-import { Physic } from "./compute/physic.js";
-import { Grid } from "./data/grid.js";
-import { GridCounter } from "./data/grid_counter.js";
-import { ResetGridCounter } from "./compute/reset_grid_counter.js";
-import { UpdateGrid } from "./compute/update_grid.js";
+import {ClearScreen} from "../compute/clear_screen.js"
+import {Screen} from "../data/screen.js"
+import {Render} from "../compute/render.js"
+import {GpuContext} from "../data/gpu_context.js"
+import { ColorTest } from "../compute/color_test.js";
+import { Particle } from "../data/particle.js";
+import { PreRender } from "../compute/pre_render.js";
+import { Physic } from "../compute/physic.js";
+import { Grid } from "../data/grid.js";
+import { GridCounter } from "../data/grid_counter.js";
+import { ResetGridCounter } from "../compute/reset_grid_counter.js";
+import { UpdateGrid } from "../compute/update_grid.js";
 
 async function main() {
     const adapter = await navigator.gpu?.requestAdapter();
@@ -72,6 +72,7 @@ async function main() {
         particle: particle,
         grid_counter: grid_counter,
         grid: grid,
+        gpu_context: gpu_context,
     }))
     const physic = await (new Physic({
         device: device,
@@ -110,6 +111,7 @@ async function main() {
         grid_counter: grid_counter,
         reset_grid_counter: reset_grid_counter,
         update_grid: update_grid,
+        diameter: 0.5,
     });
 }
 let start = performance.now()
@@ -127,6 +129,7 @@ async function step(x) {
             w: x.screen.w,
             h: x.screen.h,
         },
+        diameter: x.diameter,
         device: x.device,
     })
     x.clear_screen.setup_pass({encoder, screen:x.screen});

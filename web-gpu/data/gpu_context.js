@@ -1,6 +1,6 @@
 class GpuContext {
     constructor (x) {
-        const size = 4*4
+        const size = 6*4
         const buffer = x.device.createBuffer({
             label: `context`,
             size: size,
@@ -17,6 +17,7 @@ class GpuContext {
             x.canvas.h,
             x.screen.w,
             x.screen.h,
+            Math.max(0.0001, x.diameter),
         ], 0)
         x.device.queue.writeBuffer(this.buffer, 0, this.data);
     }
