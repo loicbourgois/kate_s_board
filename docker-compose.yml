@@ -4,4 +4,10 @@ services:
     ports:
       - "80:80"
     volumes:
-      - $full_path/front:/usr/share/nginx/html:ro
+      - $HOME/github.com/loicbourgois/vellipsis/front:/usr/share/nginx/html:ro
+  web_gpu:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - $HOME/github.com/loicbourgois/vellipsis/web-gpu:/usr/share/nginx/html:ro

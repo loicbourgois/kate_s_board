@@ -1,0 +1,7 @@
+const folders_str = "FOLDERS";
+const get_folders = () => {
+    return folders_str.split(" ");
+};
+export {
+    get_folders,
+};
